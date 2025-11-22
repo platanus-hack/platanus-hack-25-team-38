@@ -206,7 +206,6 @@ export function RemindersView() {
                 tomorrow.setDate(tomorrow.getDate() + 1)
                 return instanceDate >= today && instanceDate < tomorrow
               })}
-              loading={loadingToday}
             />
           )}
 
