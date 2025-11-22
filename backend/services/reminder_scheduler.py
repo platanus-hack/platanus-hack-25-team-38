@@ -1,12 +1,12 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func, text
+from sqlalchemy import and_
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict
 from models import Reminder, ReminderInstance, Appointment, Medicine, ElderlyProfile, NotificationLog
 from services.reminder_instances import ReminderInstanceService
 from services.notification_logs import NotificationLogService
-from dtos.reminder_instances import ReminderInstanceCreate
-from dtos.notification_logs import NotificationLogCreate
+from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate
+from dtos.notification_logs import NotificationLogUpdate
 from enums import ReminderInstanceStatus
 from integrations.kapso import send_whatsapp_message
 import logging
@@ -45,7 +45,6 @@ class ReminderSchedulerService:
         existing_instance = db.query(ReminderInstance).filter(
             ReminderInstance.reminder_id == reminder.id
         ).order_by(ReminderInstance.scheduled_datetime.desc()).first()
-        
         # Si periodicity es None o 0, solo se envía una vez
         if not reminder.periodicity or reminder.periodicity == 0:
             if not existing_instance:
@@ -208,102 +207,43 @@ class ReminderSchedulerService:
             ).first()
             
             if existing_instance:
-                # Actualizar instancia existente
-                from dtos.reminder_instances import ReminderInstanceUpdate
-                instance_update = ReminderInstanceUpdate(
-                    scheduled_datetime=scheduled_datetime,
-                    status=ReminderInstanceStatus.PENDING.value
-                )
-                reminder_instance = ReminderInstanceService.update(db, existing_instance.id, instance_update)
-                if not reminder_instance:
-                    reminder_instance = existing_instance
+                reminder_instance = existing_instance
+                logger.info(f"Usando ReminderInstance existente {reminder_instance.id} para reminder {reminder.id}")
             else:
                 # Crear nueva instancia
-                # Necesitamos generar un ID único - usar el máximo ID + 1
-                max_id_result = db.query(func.max(ReminderInstance.id)).scalar()
-                next_id = (max_id_result or 0) + 1
-                
                 instance_data = ReminderInstanceCreate(
-                    id=next_id,
                     reminder_id=reminder.id,
                     scheduled_datetime=scheduled_datetime,
                     status=ReminderInstanceStatus.PENDING.value
                 )
                 
-                try:
-                    reminder_instance = ReminderInstanceService.create(db, instance_data)
-                    logger.info(f"ReminderInstance creado con id={reminder_instance.id if reminder_instance else None}")
-                except Exception as e:
-                    db.rollback()
-                    error_msg = f"Error al crear reminder_instance para reminder {reminder.id}: {str(e)}"
-                    logger.error(error_msg)
-                    result["error"] = error_msg
-                    return result
-                
-                # Validar que la instancia se creó correctamente
+                reminder_instance = ReminderInstanceService.create(db, instance_data)
                 if not reminder_instance:
-                    db.rollback()
                     error_msg = f"No se pudo crear reminder_instance para reminder {reminder.id}"
                     logger.error(error_msg)
                     result["error"] = error_msg
                     return result
-                
-                # Verificar que tiene ID válido
-                if not reminder_instance.id:
-                    db.rollback()
-                    error_msg = f"ReminderInstance creado pero sin ID válido para reminder {reminder.id}"
-                    logger.error(error_msg)
-                    result["error"] = error_msg
-                    return result
-                
-                logger.info(f"ReminderInstance {reminder_instance.id} creado, listo para crear notification_log")
+                logger.info(f"ReminderInstance {reminder_instance.id} creado para reminder {reminder.id}")
             
-            # Validar que reminder_instance existe antes de crear notification_log
-            if not reminder_instance or not reminder_instance.id:
-                error_msg = f"ReminderInstance inválido para reminder {reminder.id}"
-                logger.error(error_msg)
-                result["error"] = error_msg
-                return result
+            # Asegurar que el reminder_instance esté en la sesión
+            db.flush()
             
-            # Asegurar que el reminder_instance está visible en la base de datos
-            # ReminderInstanceService.create ya hizo commit, pero refrescamos para sincronizar
-            db.refresh(reminder_instance)
+            # Crear notification_log en la misma transacción
+            message, buttons = ReminderSchedulerService.create_whatsapp_message(reminder)
+            notification_log = NotificationLog(
+                reminder_instance_id=reminder_instance.id,
+                notification_type="whatsapp",
+                recepient_phone=emergency_contact,
+                status="pending",
+                sent_at=datetime.now()
+            )
+            db.add(notification_log)
+            db.flush()
+            db.refresh(notification_log)
             
-            # Verificar que no existe ya un notification_log con ese ID
-            existing_log = db.query(NotificationLog).filter(NotificationLog.id == reminder_instance.id).first()
-            if existing_log:
-                logger.warning(f"Ya existe un notification_log con id={reminder_instance.id}, usando el existente")
-                notification_log = existing_log
-            else:
-                # Crear notification_log inicial
-                # El reminder_instance ya existe y está confirmado en la base de datos
-                message, buttons = ReminderSchedulerService.create_whatsapp_message(reminder)
-                log_data = NotificationLogCreate(
-                    id=reminder_instance.id,
-                    reminder_instance_id=reminder_instance.id,
-                    notification_type="whatsapp",
-                    recepient_phone=emergency_contact,
-                    status="pending",
-                    sent_at=datetime.now()
-                )
-                
-                try:
-                    notification_log = NotificationLogService.create(db, log_data)
-                    # Hacer commit después de crear ambos objetos (reminder_instance y notification_log)
-                    db.commit()
-                    if not notification_log:
-                        db.rollback()
-                        error_msg = f"No se pudo crear notification_log para reminder_instance {reminder_instance.id}"
-                        logger.error(error_msg)
-                        result["error"] = error_msg
-                        return result
-                    logger.info(f"NotificationLog creado exitosamente con id={notification_log.id}, reminder_instance_id={notification_log.reminder_instance_id}")
-                except Exception as e:
-                    db.rollback()
-                    error_msg = f"Error al crear notification_log para reminder_instance {reminder_instance.id}: {str(e)}"
-                    logger.error(error_msg)
-                    result["error"] = error_msg
-                    return result
+            # Commit de reminder_instance y notification_log juntos
+            db.commit()
+            logger.info(f"ReminderInstance {reminder_instance.id} y NotificationLog {notification_log.id} creados exitosamente")
             
             # Enviar WhatsApp
             try:
@@ -313,15 +253,12 @@ class ReminderSchedulerService:
                     buttons=buttons
                 )
                 
-                # Actualizar reminder_instance a "waiting"
-                from dtos.reminder_instances import ReminderInstanceUpdate
+                # Actualizar estados a "waiting" y "sent"
                 instance_update = ReminderInstanceUpdate(
                     status=ReminderInstanceStatus.WAITING.value
                 )
                 ReminderInstanceService.update(db, reminder_instance.id, instance_update)
                 
-                # Actualizar notification_log con información del envío
-                from dtos.notification_logs import NotificationLogUpdate
                 log_update = NotificationLogUpdate(
                     status="sent",
                     sent_at=datetime.now()
@@ -335,15 +272,12 @@ class ReminderSchedulerService:
                 error_msg = f"Error al enviar WhatsApp: {str(e)}"
                 logger.error(error_msg)
                 
-                # Actualizar reminder_instance a "failure"
-                from dtos.reminder_instances import ReminderInstanceUpdate
+                # Actualizar estados a "failure"
                 instance_update = ReminderInstanceUpdate(
                     status=ReminderInstanceStatus.FAILURE.value
                 )
                 ReminderInstanceService.update(db, reminder_instance.id, instance_update)
                 
-                # Actualizar notification_log con el error
-                from dtos.notification_logs import NotificationLogUpdate
                 log_update = NotificationLogUpdate(
                     status="failed",
                     error_message=error_msg
@@ -353,8 +287,9 @@ class ReminderSchedulerService:
                 result["error"] = error_msg
                 
         except Exception as e:
+            db.rollback()
             error_msg = f"Error al procesar reminder {reminder.id}: {str(e)}"
-            logger.error(error_msg)
+            logger.error(error_msg, exc_info=True)
             result["error"] = error_msg
         
         return result

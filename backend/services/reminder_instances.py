@@ -1,8 +1,7 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import text
 from typing import List, Optional
-from models import ReminderInstance, Reminder  # Importar Reminder para que esté en metadata
+from models import ReminderInstance
 from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate
 
 
@@ -35,33 +34,20 @@ class ReminderInstanceService:
     @staticmethod
     def create(db: Session, instance_data: ReminderInstanceCreate) -> ReminderInstance:
         """Crear una nueva instancia de recordatorio"""
-        data = instance_data.model_dump()
-        instance_id = data.pop('id')
-        
-        # Construir la query con OVERRIDING SYSTEM VALUE
-        columns = ', '.join([f'"{k}"' for k in data.keys() if data[k] is not None])
-        values = ', '.join([f':{k}' for k in data.keys() if data[k] is not None])
-        params = {k: v for k, v in data.items() if v is not None}
-        params['id'] = instance_id
-        
-        query = f"""
-            INSERT INTO reminder_instances (id, {columns}) 
-            OVERRIDING SYSTEM VALUE 
-            VALUES (:id, {values})
-            RETURNING *
-        """
+        # Excluir el ID del dump para que la BD lo genere automáticamente
+        data = instance_data.model_dump(exclude={'id'})
+        instance = ReminderInstance(**data)
         
         try:
-            result = db.execute(text(query), params)
-            db.flush()  # Hacer flush en lugar de commit para mantener la transacción abierta
-            # Obtener la instancia creada
-            instance = db.query(ReminderInstance).filter(ReminderInstance.id == instance_id).first()
+            db.add(instance)
+            db.flush()
+            db.refresh(instance)
             return instance
         except IntegrityError as e:
             db.rollback()
             error_msg = str(e.orig) if hasattr(e, 'orig') else str(e)
             if 'foreign key' in error_msg.lower() or 'violates foreign key constraint' in error_msg.lower():
-                raise ValueError(f"Error: El ID {instance_data.id} no existe en la tabla reminders")
+                raise ValueError(f"Error: El reminder_id {instance_data.reminder_id} no existe en la tabla reminders")
             raise ValueError(f"Error al crear la instancia de recordatorio: {error_msg}")
         except Exception as e:
             db.rollback()
