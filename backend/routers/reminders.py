@@ -7,7 +7,7 @@ from services.reminders import ReminderService
 from services.reminder_scheduler import ReminderSchedulerService
 from services.reminder_instances import ReminderInstanceService
 from services.notification_logs import NotificationLogService
-from dtos.reminders import ReminderCreate, ReminderUpdate, ReminderResponse
+from dtos.reminders import ReminderCreate, ReminderUpdate, ReminderResponse, ReminderWithMedicineResponse
 from dtos.reminder_instances import ReminderInstanceUpdate
 from dtos.notification_logs import NotificationLogUpdate
 from enums import ReminderInstanceStatus
@@ -32,6 +32,45 @@ async def get_reminders(
     return reminders
 
 
+@router.get("/with-medicine", response_model=List[ReminderWithMedicineResponse])
+async def get_reminders_with_medicine(
+    skip: int = 0,
+    limit: int = 100,
+    db: Session = Depends(get_db)
+):
+    """Obtener todos los recordatorios con datos de medicina (optimizado con join)"""
+    reminders = ReminderService.get_all_with_medicine(db, skip=skip, limit=limit)
+    return reminders
+
+
+@router.get("/active/all", response_model=List[ReminderResponse])
+async def get_active_reminders(
+    db: Session = Depends(get_db)
+):
+    """Obtener todos los recordatorios activos"""
+    reminders = ReminderService.get_active(db)
+    return reminders
+
+
+@router.get("/active/with-medicine", response_model=List[ReminderWithMedicineResponse])
+async def get_active_reminders_with_medicine(
+    db: Session = Depends(get_db)
+):
+    """Obtener todos los recordatorios activos con datos de medicina (optimizado con join)"""
+    reminders = ReminderService.get_active_with_medicine(db)
+    return reminders
+
+
+@router.get("/type/{reminder_type}", response_model=List[ReminderResponse])
+async def get_reminders_by_type(
+    reminder_type: str,
+    db: Session = Depends(get_db)
+):
+    """Obtener todos los recordatorios por tipo"""
+    reminders = ReminderService.get_by_type(db, reminder_type)
+    return reminders
+
+
 @router.get("/{reminder_id}", response_model=ReminderResponse)
 async def get_reminder(
     reminder_id: int,
@@ -45,25 +84,6 @@ async def get_reminder(
             detail=f"Recordatorio con ID {reminder_id} no encontrado"
         )
     return reminder
-
-
-@router.get("/active/all", response_model=List[ReminderResponse])
-async def get_active_reminders(
-    db: Session = Depends(get_db)
-):
-    """Obtener todos los recordatorios activos"""
-    reminders = ReminderService.get_active(db)
-    return reminders
-
-
-@router.get("/type/{reminder_type}", response_model=List[ReminderResponse])
-async def get_reminders_by_type(
-    reminder_type: str,
-    db: Session = Depends(get_db)
-):
-    """Obtener todos los recordatorios por tipo"""
-    reminders = ReminderService.get_by_type(db, reminder_type)
-    return reminders
 
 
 @router.post("/", response_model=ReminderResponse, status_code=status.HTTP_201_CREATED)

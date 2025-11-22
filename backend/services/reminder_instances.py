@@ -1,8 +1,10 @@
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from typing import List, Optional
-from models import ReminderInstance
-from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate
+from sqlalchemy import and_, func, cast, Date
+from datetime import datetime, date, timedelta
+from typing import List, Optional, Dict, Any
+from models import ReminderInstance, Reminder, Medicine
+from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate, ReminderInstanceWithMedicineResponse
 
 
 class ReminderInstanceService:
@@ -88,4 +90,133 @@ class ReminderInstanceService:
         db.delete(instance)
         db.commit()
         return True
+
+    @staticmethod
+    def get_all_with_medicine(db: Session, skip: int = 0, limit: int = 100) -> List[ReminderInstanceWithMedicineResponse]:
+        """Obtener todas las instancias con datos de reminder y medicina usando joins"""
+        instances = (
+            db.query(ReminderInstance, Reminder, Medicine)
+            .join(Reminder, ReminderInstance.reminder_id == Reminder.id)
+            .outerjoin(Medicine, Reminder.medicine == Medicine.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        
+        result = []
+        for instance, reminder, medicine in instances:
+            instance_response = ReminderInstanceWithMedicineResponse(
+                id=instance.id,
+                reminder_id=instance.reminder_id,
+                scheduled_datetime=instance.scheduled_datetime,
+                status=instance.status,
+                taken_at=instance.taken_at,
+                retry_count=instance.retry_count,
+                max_retries=instance.max_retries,
+                family_notified=instance.family_notified,
+                family_notified_at=instance.family_notified_at,
+                notes=instance.notes,
+                created_at=instance.created_at,
+                updated_at=instance.updated_at,
+                message_id=instance.message_id,
+                medicine_name=medicine.name if medicine else None,
+                dosage=medicine.dosage if medicine else None,
+                method=None
+            )
+            result.append(instance_response)
+        
+        return result
+
+    @staticmethod
+    def get_today_with_medicine(db: Session) -> List[ReminderInstanceWithMedicineResponse]:
+        """Obtener instancias de hoy con datos de reminder y medicina usando joins"""
+        today = datetime.now().date()
+        start_of_day = datetime.combine(today, datetime.min.time())
+        start_of_tomorrow = datetime.combine(today + timedelta(days=1), datetime.min.time())
+        
+        # Use date range for PostgreSQL - more reliable
+        # Get all instances where scheduled_datetime is >= start of today and < start of tomorrow
+        instances = (
+            db.query(ReminderInstance, Reminder, Medicine)
+            .join(Reminder, ReminderInstance.reminder_id == Reminder.id)
+            .outerjoin(Medicine, Reminder.medicine == Medicine.id)
+            .filter(
+                and_(
+                    ReminderInstance.scheduled_datetime >= start_of_day,
+                    ReminderInstance.scheduled_datetime < start_of_tomorrow
+                )
+            )
+            .order_by(ReminderInstance.scheduled_datetime.asc())
+            .all()
+        )
+        
+        result = []
+        for instance, reminder, medicine in instances:
+            instance_response = ReminderInstanceWithMedicineResponse(
+                id=instance.id,
+                reminder_id=instance.reminder_id,
+                scheduled_datetime=instance.scheduled_datetime,
+                status=instance.status,
+                taken_at=instance.taken_at,
+                retry_count=instance.retry_count,
+                max_retries=instance.max_retries,
+                family_notified=instance.family_notified,
+                family_notified_at=instance.family_notified_at,
+                notes=instance.notes,
+                created_at=instance.created_at,
+                updated_at=instance.updated_at,
+                message_id=instance.message_id,
+                medicine_name=medicine.name if medicine else None,
+                dosage=medicine.dosage if medicine else None,
+                method=None
+            )
+            result.append(instance_response)
+        
+        return result
+
+    @staticmethod
+    def get_by_month_with_medicine(db: Session, year: int, month: int) -> List[ReminderInstanceWithMedicineResponse]:
+        """Obtener instancias de un mes específico con datos de reminder y medicina usando joins"""
+        start_date = datetime(year, month, 1)
+        if month == 12:
+            end_date = datetime(year + 1, 1, 1)
+        else:
+            end_date = datetime(year, month + 1, 1)
+        
+        instances = (
+            db.query(ReminderInstance, Reminder, Medicine)
+            .join(Reminder, ReminderInstance.reminder_id == Reminder.id)
+            .outerjoin(Medicine, Reminder.medicine == Medicine.id)
+            .filter(
+                and_(
+                    ReminderInstance.scheduled_datetime >= start_date,
+                    ReminderInstance.scheduled_datetime < end_date
+                )
+            )
+            .all()
+        )
+        
+        result = []
+        for instance, reminder, medicine in instances:
+            instance_response = ReminderInstanceWithMedicineResponse(
+                id=instance.id,
+                reminder_id=instance.reminder_id,
+                scheduled_datetime=instance.scheduled_datetime,
+                status=instance.status,
+                taken_at=instance.taken_at,
+                retry_count=instance.retry_count,
+                max_retries=instance.max_retries,
+                family_notified=instance.family_notified,
+                family_notified_at=instance.family_notified_at,
+                notes=instance.notes,
+                created_at=instance.created_at,
+                updated_at=instance.updated_at,
+                message_id=instance.message_id,
+                medicine_name=medicine.name if medicine else None,
+                dosage=medicine.dosage if medicine else None,
+                method=None
+            )
+            result.append(instance_response)
+        
+        return result
 

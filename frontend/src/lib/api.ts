@@ -29,6 +29,18 @@ class ApiClient {
     return response.data
   }
 
+  async getRemindersWithMedicine(skip = 0, limit = 100) {
+    const response = await this.client.get('/reminders/with-medicine', {
+      params: { skip, limit },
+    })
+    return response.data
+  }
+
+  async getActiveRemindersWithMedicine() {
+    const response = await this.client.get('/reminders/active/with-medicine')
+    return response.data
+  }
+
   async createReminder(data: unknown) {
     const response = await this.client.post('/reminders', data)
     return response.data
@@ -73,6 +85,23 @@ class ApiClient {
 
   async getReminderInstancesByStatus(status: string) {
     const response = await this.client.get(`/reminder-instances/status/${status}`)
+    return response.data
+  }
+
+  async getReminderInstancesWithMedicine(skip = 0, limit = 100) {
+    const response = await this.client.get('/reminder-instances/with-medicine', {
+      params: { skip, limit },
+    })
+    return response.data
+  }
+
+  async getTodayReminderInstancesWithMedicine() {
+    const response = await this.client.get('/reminder-instances/today/with-medicine')
+    return response.data
+  }
+
+  async getMonthReminderInstancesWithMedicine(year: number, month: number) {
+    const response = await this.client.get(`/reminder-instances/month/${year}/${month}/with-medicine`)
     return response.data
   }
 

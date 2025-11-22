@@ -1,65 +1,23 @@
 import { api } from './api'
-import type { Reminder, ReminderResponse, MedicineResponse, ReminderInstanceResponse } from '@/app/components/reminders/components/types'
+import type { Reminder, ReminderInstance } from '@/app/components/reminders/components/types'
 
 /**
  * Service to fetch reminders with related medicine data
+ * Now uses optimized backend endpoints with SQL joins
  */
 export class RemindersService {
   /**
-   * Fetch all reminders and enrich with medicine data
+   * Fetch all reminders with medicine data (optimized - single API call)
    */
   static async getRemindersWithMedicine(): Promise<Reminder[]> {
-    const reminders = await api.getReminders() as ReminderResponse[]
-    
-    // Fetch medicine data for each reminder
-    const enrichedReminders = await Promise.all(
-      reminders.map(async (reminder) => {
-        let medicineData: MedicineResponse | undefined
-        
-        if (reminder.medicine) {
-          try {
-            medicineData = await api.getMedicine(reminder.medicine) as MedicineResponse
-          } catch (error) {
-            console.error(`Failed to fetch medicine ${reminder.medicine}:`, error)
-          }
-        }
-        
-        return {
-          ...reminder,
-          medicineData,
-        } as Reminder
-      })
-    )
-    
-    return enrichedReminders
+    return await api.getRemindersWithMedicine() as Reminder[]
   }
 
   /**
-   * Fetch active reminders with medicine data
+   * Fetch active reminders with medicine data (optimized - single API call)
    */
   static async getActiveRemindersWithMedicine(): Promise<Reminder[]> {
-    const reminders = await api.getActiveReminders() as ReminderResponse[]
-    
-    const enrichedReminders = await Promise.all(
-      reminders.map(async (reminder) => {
-        let medicineData: MedicineResponse | undefined
-        
-        if (reminder.medicine) {
-          try {
-            medicineData = await api.getMedicine(reminder.medicine) as MedicineResponse
-          } catch (error) {
-            console.error(`Failed to fetch medicine ${reminder.medicine}:`, error)
-          }
-        }
-        
-        return {
-          ...reminder,
-          medicineData,
-        } as Reminder
-      })
-    )
-    
-    return enrichedReminders
+    return await api.getActiveRemindersWithMedicine() as Reminder[]
   }
 
   /**
@@ -67,21 +25,24 @@ export class RemindersService {
    */
   static async getReminderWithMedicine(id: number): Promise<Reminder | null> {
     try {
-      const reminder = await api.getReminder(id) as ReminderResponse
-      
-      let medicineData: MedicineResponse | undefined
+      const reminder = await api.getReminder(id)
+      // If reminder has medicine, fetch it separately (single reminder doesn't have optimized endpoint)
       if (reminder.medicine) {
         try {
-          medicineData = await api.getMedicine(reminder.medicine) as MedicineResponse
+          const medicineData = await api.getMedicine(reminder.medicine)
+          return {
+            ...reminder,
+            medicineData,
+          } as Reminder
         } catch (error) {
           console.error(`Failed to fetch medicine ${reminder.medicine}:`, error)
+          return {
+            ...reminder,
+            medicineData: undefined,
+          } as Reminder
         }
       }
-      
-      return {
-        ...reminder,
-        medicineData,
-      } as Reminder
+      return reminder as Reminder
     } catch (error) {
       console.error(`Failed to fetch reminder ${id}:`, error)
       return null
@@ -89,63 +50,17 @@ export class RemindersService {
   }
 
   /**
-   * Fetch reminder instances for today
+   * Fetch reminder instances for today (optimized - single API call with date filter)
    */
-  static async getTodayReminderInstances(): Promise<ReminderInstanceResponse[]> {
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    
-    const instances = await api.getReminderInstances() as ReminderInstanceResponse[]
-    
-    // Filter instances for today
-    return instances.filter((instance) => {
-      const instanceDate = new Date(instance.scheduled_datetime)
-      return instanceDate >= today && instanceDate < tomorrow
-    })
+  static async getTodayReminderInstances(): Promise<ReminderInstance[]> {
+    return await api.getTodayReminderInstancesWithMedicine() as ReminderInstance[]
   }
 
   /**
-   * Fetch reminder instances with medicine data
+   * Fetch reminder instances with medicine data (optimized - single API call with joins)
    */
-  static async getReminderInstancesWithMedicine(): Promise<any[]> {
-    const instances = await api.getReminderInstances() as ReminderInstanceResponse[]
-    
-    // Fetch reminder and medicine data for each instance
-    const enrichedInstances = await Promise.all(
-      instances.map(async (instance) => {
-        try {
-          const reminder = await api.getReminder(instance.reminder_id) as ReminderResponse
-          let medicineData: MedicineResponse | undefined
-          
-          if (reminder.medicine) {
-            try {
-              medicineData = await api.getMedicine(reminder.medicine) as MedicineResponse
-            } catch (error) {
-              console.error(`Failed to fetch medicine ${reminder.medicine}:`, error)
-            }
-          }
-          
-          return {
-            ...instance,
-            medicine_name: medicineData?.name || 'Unknown',
-            dosage: medicineData?.dosage || '',
-            method: 'whatsapp' as const, // Default, could be determined from notification_log
-          }
-        } catch (error) {
-          console.error(`Failed to fetch reminder ${instance.reminder_id}:`, error)
-          return {
-            ...instance,
-            medicine_name: 'Unknown',
-            dosage: '',
-            method: 'whatsapp' as const,
-          }
-        }
-      })
-    )
-    
-    return enrichedInstances
+  static async getReminderInstancesWithMedicine(): Promise<ReminderInstance[]> {
+    return await api.getReminderInstancesWithMedicine() as ReminderInstance[]
   }
 }
 

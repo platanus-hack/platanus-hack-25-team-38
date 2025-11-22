@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
 from enums import ReminderInstanceStatus
+from dtos.medicines import MedicineResponse
 
 
 class ReminderInstanceCreate(BaseModel):
@@ -45,6 +46,29 @@ class ReminderInstanceResponse(BaseModel):
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
     message_id: Optional[str] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ReminderInstanceWithMedicineResponse(BaseModel):
+    """Reminder instance response with reminder and medicine data included"""
+    id: int
+    reminder_id: int
+    scheduled_datetime: datetime
+    status: Optional[str]
+    taken_at: Optional[datetime]
+    retry_count: Optional[int]
+    max_retries: Optional[int]
+    family_notified: Optional[bool]
+    family_notified_at: Optional[datetime]
+    notes: Optional[str]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    message_id: Optional[str] = None
+    medicine_name: Optional[str] = None
+    dosage: Optional[str] = None
+    method: Optional[str]
 
     class Config:
         from_attributes = True

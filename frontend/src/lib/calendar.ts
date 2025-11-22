@@ -1,4 +1,4 @@
-import { RemindersService } from './reminders'
+import { api } from './api'
 import type { CalendarEvent } from '@/app/components/calendar/types'
 import type { ReminderInstance } from '@/app/components/reminders/components/types'
 
@@ -24,19 +24,12 @@ export function reminderInstanceToCalendarEvent(instance: ReminderInstance): Cal
 }
 
 /**
- * Fetch calendar events for a given month
+ * Fetch calendar events for a given month (optimized - single API call with date filter)
  */
 export async function getCalendarEventsForMonth(year: number, month: number): Promise<CalendarEvent[]> {
   try {
-    const instances = await RemindersService.getReminderInstancesWithMedicine()
-    
-    // Filter instances for the specified month
-    const monthInstances = instances.filter((instance) => {
-      const instanceDate = new Date(instance.scheduled_datetime)
-      return instanceDate.getFullYear() === year && instanceDate.getMonth() === month
-    })
-    
-    return monthInstances.map(reminderInstanceToCalendarEvent)
+    const instances = await api.getMonthReminderInstancesWithMedicine(year, month + 1) // month is 0-indexed in JS, backend expects 1-indexed
+    return instances.map(reminderInstanceToCalendarEvent)
   } catch (error) {
     console.error('Error fetching calendar events:', error)
     return []
