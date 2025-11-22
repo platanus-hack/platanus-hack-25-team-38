@@ -9,6 +9,7 @@ interface ActivateReminderModalProps {
   onClose: () => void
   reminder: Reminder | null
   onConfirm: () => void
+  loading?: boolean
 }
 
 export function ActivateReminderModal({
@@ -16,12 +17,13 @@ export function ActivateReminderModal({
   onClose,
   reminder,
   onConfirm,
+  loading = false,
 }: ActivateReminderModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
-          <DialogTitle>Activar Recordatorio - {reminder?.medicine?.name}</DialogTitle>
+          <DialogTitle>Activar Recordatorio - {reminder?.medicineData?.name || "Sin medicina"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-4">
           <p className="text-sm text-muted-foreground">
@@ -33,7 +35,7 @@ export function ActivateReminderModal({
               <label className="text-sm font-medium text-foreground">Total de pastillas</label>
               <input
                 type="number"
-                defaultValue={reminder?.medicine?.total_tablets || 0}
+                defaultValue={reminder?.medicineData?.total_tablets || 0}
                 className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
               />
             </div>
@@ -41,7 +43,7 @@ export function ActivateReminderModal({
               <label className="text-sm font-medium text-foreground">Pastillas restantes</label>
               <input
                 type="number"
-                defaultValue={reminder?.medicine?.tablets_left || 0}
+                defaultValue={reminder?.medicineData?.tablets_left || 0}
                 className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
               />
             </div>
@@ -81,10 +83,10 @@ export function ActivateReminderModal({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button className="bg-primary hover:bg-primary/90" onClick={onConfirm}>
+          <Button className="bg-primary hover:bg-primary/90" onClick={onConfirm} loading={loading}>
             Activar Recordatorio
           </Button>
         </DialogFooter>

@@ -14,8 +14,8 @@ export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarPro
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const menuItems = [
-    { id: "calendar", label: "Calendario", icon: Calendar },
     { id: "reminders", label: "Recordatorios", icon: Pill },
+    { id: "calendar", label: "Calendario", icon: Calendar },
   ] as const
 
   return (

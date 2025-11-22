@@ -1,30 +1,57 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import clsx from "clsx"
 import { MonthlyCalendarView } from "@/app/components/calendar/monthly-calendar-view"
 import { DailyCalendarView } from "@/app/components/calendar/daily-calendar-view"
 import { EventDetailModal } from "./event-detail-modal"
-import { mockEvents } from "@/app/components/calendar/mock-data"
+import { CalendarSkeleton } from "./calendar-skeleton"
+import { getCalendarEventsForMonth, getEventsForDay } from "@/lib/calendar"
 import type { CalendarEvent } from "@/app/components/calendar/types"
 
 export function CalendarView() {
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 10, 15))
+  const [currentDate, setCurrentDate] = useState(new Date())
   const [selectedDay, setSelectedDay] = useState<number | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null)
   const [hoveredDate, setHoveredDate] = useState<number | null>(null)
   const [isTransitioning, setIsTransitioning] = useState(false)
+  const [events, setEvents] = useState<CalendarEvent[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getEventsForDay = (day: number) => mockEvents.filter((event) => event.date === day)
+  // Load events when month changes
+  useEffect(() => {
+    loadEvents()
+  }, [currentDate.getFullYear(), currentDate.getMonth()])
+
+  const loadEvents = async () => {
+    setLoading(true)
+    try {
+      const monthEvents = await getCalendarEventsForMonth(
+        currentDate.getFullYear(),
+        currentDate.getMonth()
+      )
+      setEvents(monthEvents)
+    } catch (error) {
+      console.error("Error loading calendar events:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const getEventsForDayWrapper = (day: number) => getEventsForDay(events, day)
 
   const previousMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1))
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1)
+    setCurrentDate(newDate)
     setSelectedDay(null)
+    setLoading(true) // Show loading when changing months
   }
 
   const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1))
+    const newDate = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1)
+    setCurrentDate(newDate)
     setSelectedDay(null)
+    setLoading(true) // Show loading when changing months
   }
 
   const handleDayClick = (day: number) => {
@@ -53,6 +80,10 @@ export function CalendarView() {
     setSelectedEvent(null)
   }
 
+  if (loading) {
+    return <CalendarSkeleton />
+  }
+
   if (selectedDay === null) {
     return (
       <div
@@ -66,7 +97,7 @@ export function CalendarView() {
           onPreviousMonth={previousMonth}
           onNextMonth={nextMonth}
           onDayClick={handleDayClick}
-          getEventsForDay={getEventsForDay}
+          getEventsForDay={getEventsForDayWrapper}
           hoveredDate={hoveredDate}
           setHoveredDate={setHoveredDate}
         />
@@ -74,7 +105,7 @@ export function CalendarView() {
     )
   }
 
-  const dayEvents = getEventsForDay(selectedDay)
+  const dayEvents = getEventsForDayWrapper(selectedDay)
 
   return (
     <>

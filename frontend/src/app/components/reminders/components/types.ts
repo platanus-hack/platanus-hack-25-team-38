@@ -1,24 +1,60 @@
-export interface Reminder {
+// Backend DTO types (matching backend/dtos)
+export interface ReminderResponse {
   id: number
   reminder_type: string
-  periodicity: string | null
+  periodicity: number | null
   start_date: string
   end_date: string | null
-  is_active: boolean
-  medicine?: Medicine
-  executions: ReminderExecution[]
+  medicine: number | null
+  appointment_id: number | null
+  elderly_profile_id: number | null
+  is_active: boolean | null
+  created_at: string | null
+  updated_at: string | null
 }
 
-export interface Medicine {
+export interface MedicineResponse {
   id: number
   name: string
   dosage: string | null
   total_tablets: number | null
   tablets_left: number | null
-  tablets_per_dose: number
+  tablets_per_dose: number | null
   notes: string | null
+  created_at: string | null
+  updated_at: string | null
 }
 
+export interface ReminderInstanceResponse {
+  id: number
+  reminder_id: number
+  scheduled_datetime: string
+  status: string | null
+  taken_at: string | null
+  retry_count: number | null
+  max_retries: number | null
+  family_notified: boolean | null
+  family_notified_at: string | null
+  notes: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+// Frontend extended types (with related data)
+export interface Reminder extends ReminderResponse {
+  medicineData?: MedicineResponse
+  instances?: ReminderInstanceResponse[]
+}
+
+export interface Medicine extends MedicineResponse {}
+
+export interface ReminderInstance extends ReminderInstanceResponse {
+  medicine_name?: string
+  dosage?: string
+  method?: "whatsapp" | "call"
+}
+
+// Legacy types for compatibility (deprecated, use ReminderInstance)
 export interface ReminderExecution {
   id: number
   executed_at: string
@@ -26,17 +62,4 @@ export interface ReminderExecution {
   method: "whatsapp" | "call"
   retries: number
   duration_minutes: number
-}
-
-export interface ReminderInstance {
-  id: number
-  reminder_id: number
-  scheduled_datetime: string
-  status: "success" | "failed" | "pending"
-  taken_at: string | null
-  retry_count: number
-  max_retries: number
-  method: "whatsapp" | "call"
-  medicine_name: string
-  dosage: string
 }

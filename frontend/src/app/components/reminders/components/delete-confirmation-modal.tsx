@@ -10,6 +10,7 @@ interface DeleteConfirmationModalProps {
   onClose: () => void
   reminder: Reminder | null
   onConfirm: () => void
+  loading?: boolean
 }
 
 export function DeleteConfirmationModal({
@@ -17,6 +18,7 @@ export function DeleteConfirmationModal({
   onClose,
   reminder,
   onConfirm,
+  loading = false,
 }: DeleteConfirmationModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -30,15 +32,15 @@ export function DeleteConfirmationModal({
         <div className="py-4">
           <p className="text-foreground">
             ¿Estás seguro de que deseas eliminar el recordatorio de{" "}
-            <strong>{reminder?.medicine?.name}</strong>?
+            <strong>{reminder?.medicineData?.name || "esta medicina"}</strong>?
           </p>
           <p className="text-sm text-muted-foreground mt-2">Esta acción no se puede deshacer.</p>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
             Cancelar
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button variant="destructive" onClick={onConfirm} loading={loading}>
             Eliminar
           </Button>
         </DialogFooter>

@@ -4,13 +4,12 @@ import { useState } from "react"
 import { Sidebar } from "@/app/components/sidebar"
 import { CalendarView } from "@/app/components/calendar"
 import { RemindersView } from "@/app/components/reminders"
-import { AppointmentsView } from "@/app/components/appointments"
 import { PatientProfile } from "@/app/components/elderly-profile"
 
 type ViewType = "calendar" | "reminders" | "appointments"
 
 export default function Home() {
-  const [activeView, setActiveView] = useState<ViewType>("calendar")
+  const [activeView, setActiveView] = useState<ViewType>("reminders")
   const [showPatientProfile, setShowPatientProfile] = useState(false)
 
   const handlePatientClick = () => {

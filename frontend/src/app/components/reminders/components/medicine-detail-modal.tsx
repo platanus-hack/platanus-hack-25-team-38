@@ -6,16 +6,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import {
   Pill,
   Clock,
-  Phone,
-  MessageCircle,
-  CheckCircle,
-  XCircle,
   Trash2,
   Power,
   Edit,
   Calendar,
 } from "lucide-react"
-import { Reminder, ReminderExecution } from "./types"
+import { Reminder } from "./types"
+import { formatPeriodicity } from "@/lib/utils"
 
 interface MedicineDetailModalProps {
   isOpen: boolean
@@ -23,6 +20,8 @@ interface MedicineDetailModalProps {
   reminder: Reminder | null
   onDelete: () => void
   onToggleActive: (reminder: Reminder) => void
+  isToggling?: boolean
+  isDeleting?: boolean
 }
 
 export function MedicineDetailModal({
@@ -31,29 +30,35 @@ export function MedicineDetailModal({
   reminder,
   onDelete,
   onToggleActive,
+  isToggling = false,
+  isDeleting = false,
 }: MedicineDetailModalProps) {
   const [isEditMode, setIsEditMode] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   if (!reminder) return null
 
-  const getRecentExecutions = (executions: ReminderExecution[]) => {
-    return executions
-      .filter((e) => e.status !== "pending")
-      .slice(-5)
-      .reverse()
-  }
-
-  const recentExecutions = getRecentExecutions(reminder.executions)
+  const medicine = reminder.medicineData
+  const fillPercentage = medicine && medicine.total_tablets && medicine.tablets_left !== null
+    ? (medicine.tablets_left / medicine.total_tablets) * 100
+    : 0
 
   const handleClose = () => {
     setIsEditMode(false)
     onClose()
   }
 
-  const handleSave = () => {
+  const handleSave = async () => {
     // TODO: Implement save logic
-    console.log("[v0] Saving changes")
-    setIsEditMode(false)
+    setIsSaving(true)
+    try {
+      console.log("[v0] Saving changes")
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      setIsEditMode(false)
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   return (
@@ -62,7 +67,7 @@ export function MedicineDetailModal({
         {/* Fixed Header */}
         <DialogHeader className="flex-shrink-0 px-6 pt-6 pb-4 border-b border-border bg-background">
             <DialogTitle className="flex items-center justify-between">
-              <span>{isEditMode ? "Editar" : "Detalles"} - {reminder.medicine?.name}</span>
+              <span>{isEditMode ? "Editar" : "Detalles"} - {medicine?.name || "Sin medicina"}</span>
             </DialogTitle>
           </DialogHeader>
 
@@ -71,38 +76,38 @@ export function MedicineDetailModal({
           <div className="space-y-6 w-full">
             <div className="flex items-center gap-6">
               <div className="relative">
-                <div className="w-32 h-44 bg-gradient-to-b from-cream/30 to-cream/50 rounded-2xl border-3 border-primary flex items-end justify-center overflow-hidden shadow-lg">
-                  {reminder.medicine && (
+                <div className="w-32 h-44 bg-gradient-to-b from-muted/30 to-muted/50 rounded-2xl border-2 border-primary flex items-end justify-center overflow-hidden shadow-lg">
+                  {medicine && (
                     <>
                       <div
                         className="w-full bg-gradient-to-b from-primary to-primary/80 transition-all duration-700"
                         style={{
-                          height: `${(reminder.medicine.tablets_left! / reminder.medicine.total_tablets!) * 100}%`,
+                          height: `${fillPercentage}%`,
                         }}
                       />
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
                         <Pill
                           className={`w-12 h-12 ${
-                            (reminder.medicine.tablets_left! / reminder.medicine.total_tablets!) * 100 < 30
+                            fillPercentage < 30
                               ? "text-primary/40"
                               : "text-white/60"
                           }`}
                         />
                         <span
                           className={`font-bold text-2xl mt-2 ${
-                            (reminder.medicine.tablets_left! / reminder.medicine.total_tablets!) * 100 < 30
+                            fillPercentage < 30
                               ? "text-primary"
                               : "text-white"
                           }`}
                         >
-                          {reminder.medicine.tablets_left}
+                          {medicine.tablets_left ?? 0}
                         </span>
                       </div>
                     </>
                   )}
                 </div>
                 <p className="text-center mt-3 text-sm font-semibold">
-                  de {reminder.medicine?.total_tablets} pastillas
+                  de {medicine?.total_tablets ?? 0} pastillas
                 </p>
               </div>
 
@@ -112,11 +117,11 @@ export function MedicineDetailModal({
                   {isEditMode ? (
                     <input
                       type="text"
-                      defaultValue={reminder.medicine?.name}
+                      defaultValue={medicine?.name}
                       className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                     />
                   ) : (
-                    <p className="mt-1 text-lg font-semibold text-foreground">{reminder.medicine?.name}</p>
+                    <p className="mt-1 text-lg font-semibold text-foreground">{medicine?.name || "Sin medicina"}</p>
                   )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -125,11 +130,11 @@ export function MedicineDetailModal({
                     {isEditMode ? (
                       <input
                         type="text"
-                        defaultValue={reminder.medicine?.dosage || ""}
+                        defaultValue={medicine?.dosage || ""}
                         className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                       />
                     ) : (
-                      <p className="mt-1 text-foreground">{reminder.medicine?.dosage || "No especificada"}</p>
+                      <p className="mt-1 text-foreground">{medicine?.dosage || "No especificada"}</p>
                     )}
                   </div>
                   <div>
@@ -137,11 +142,11 @@ export function MedicineDetailModal({
                     {isEditMode ? (
                       <input
                         type="number"
-                        defaultValue={reminder.medicine?.tablets_per_dose}
+                        defaultValue={medicine?.tablets_per_dose ?? 1}
                         className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                       />
                     ) : (
-                      <p className="mt-1 text-foreground">{reminder.medicine?.tablets_per_dose} pastilla(s)</p>
+                      <p className="mt-1 text-foreground">{medicine?.tablets_per_dose ?? 1} pastilla(s)</p>
                     )}
                   </div>
                 </div>
@@ -151,11 +156,11 @@ export function MedicineDetailModal({
                     {isEditMode ? (
                       <input
                         type="number"
-                        defaultValue={reminder.medicine?.total_tablets || 0}
+                        defaultValue={medicine?.total_tablets || 0}
                         className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                       />
                     ) : (
-                      <p className="mt-1 text-foreground">{reminder.medicine?.total_tablets}</p>
+                      <p className="mt-1 text-foreground">{medicine?.total_tablets ?? 0}</p>
                     )}
                   </div>
                   <div>
@@ -163,11 +168,11 @@ export function MedicineDetailModal({
                     {isEditMode ? (
                       <input
                         type="number"
-                        defaultValue={reminder.medicine?.tablets_left || 0}
+                        defaultValue={medicine?.tablets_left || 0}
                         className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                       />
                     ) : (
-                      <p className="mt-1 text-foreground">{reminder.medicine?.tablets_left}</p>
+                      <p className="mt-1 text-foreground">{medicine?.tablets_left ?? 0}</p>
                     )}
                   </div>
                 </div>
@@ -208,7 +213,7 @@ export function MedicineDetailModal({
                   ) : (
                     <div className="mt-1 flex items-center gap-2">
                       <Clock className="w-4 h-4 text-muted-foreground" />
-                      <span className="text-foreground">{reminder.periodicity}</span>
+                      <span className="text-foreground">{formatPeriodicity(reminder.periodicity)}</span>
                     </div>
                   )}
                 </div>
@@ -265,57 +270,19 @@ export function MedicineDetailModal({
                 <label className="text-sm font-medium text-foreground">Notas</label>
                 {isEditMode ? (
                   <textarea
-                    defaultValue={reminder.medicine?.notes || ""}
+                    defaultValue={medicine?.notes || ""}
                     rows={3}
                     className="mt-1 w-full px-3 py-2 border border-border rounded-lg bg-background text-foreground"
                     placeholder="Agregar notas sobre el medicamento..."
                   />
                 ) : (
                   <p className="mt-1 text-foreground text-sm">
-                    {reminder.medicine?.notes || "Sin notas adicionales"}
+                    {medicine?.notes || "Sin notas adicionales"}
                   </p>
                 )}
               </div>
             </div>
 
-            {recentExecutions.length > 0 && !isEditMode && (
-              <div className="pt-4 border-t border-border">
-                <h3 className="font-semibold text-foreground mb-4">Últimas 5 Ejecuciones</h3>
-                <div className="space-y-3">
-                  {recentExecutions.map((execution) => (
-                    <div key={execution.id} className="flex items-center gap-4 p-3 bg-muted rounded-lg">
-                      <div
-                        className={`w-10 h-10 rounded-full flex items-center justify-center border-2 ${
-                          execution.status === "success"
-                            ? "bg-green-100 border-green-500 dark:bg-green-900/30"
-                            : "bg-red-100 border-red-500 dark:bg-red-900/30"
-                        }`}
-                      >
-                        {execution.method === "whatsapp" ? (
-                          <MessageCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
-                        ) : (
-                          <Phone className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-foreground">
-                          {new Date(execution.executed_at).toLocaleString("es-ES")}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {execution.duration_minutes} minutos
-                          {execution.retries > 0 && ` • ${execution.retries} reintentos`}
-                        </p>
-                      </div>
-                      {execution.status === "success" ? (
-                        <CheckCircle className="w-5 h-5 text-green-600" />
-                      ) : (
-                        <XCircle className="w-5 h-5 text-red-600" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
@@ -325,10 +292,10 @@ export function MedicineDetailModal({
             {isEditMode ? (
               <>
                 <div className="flex gap-2">
-                  <Button variant="outline" onClick={() => setIsEditMode(false)}>
+                  <Button variant="outline" onClick={() => setIsEditMode(false)} disabled={isSaving}>
                     Cancelar
                   </Button>
-                  <Button className="bg-primary hover:bg-primary/90" onClick={handleSave}>
+                  <Button className="bg-primary hover:bg-primary/90" onClick={handleSave} loading={isSaving}>
                     Guardar Cambios
                   </Button>
                 </div>
@@ -340,11 +307,11 @@ export function MedicineDetailModal({
                     <Edit className="w-4 h-4 mr-2" />
                     Editar
                   </Button>
-                  <Button variant="outline" onClick={() => onToggleActive(reminder)}>
+                  <Button variant="outline" onClick={() => onToggleActive(reminder)} loading={isToggling}>
                     <Power className="w-4 h-4 mr-2" />
                     {reminder.is_active ? "Desactivar" : "Activar"}
                   </Button>
-                  <Button variant="destructive" onClick={onDelete}>
+                  <Button variant="destructive" onClick={onDelete} loading={isDeleting}>
                     <Trash2 className="w-4 h-4 mr-2" />
                     Eliminar
                   </Button>

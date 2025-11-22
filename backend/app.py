@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from pydantic import BaseModel
 from typing import List, Dict
@@ -9,10 +10,25 @@ from routers import appointments, elderly_profiles, health_workers, users, medic
 from database import Base, engine
 # from routers import auth
 # from config import settings
+import os
 
 load_dotenv()
 
 app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:3001",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Importar todos los modelos para que estén registrados en Base.metadata
 from models import Appointment, ElderlyProfile, HealthWorker, User, Medicine, NotificationLog, ReminderInstance, Reminder, FamilyElderlyRelationship

@@ -1,13 +1,15 @@
 "use client"
 
 import { TimelineItem } from "./timeline-item"
+import { TimelineItemSkeleton } from "./timeline-item-skeleton"
 import { ReminderInstance } from "./types"
 
 interface TodayTabProps {
   reminderInstances: ReminderInstance[]
+  loading?: boolean
 }
 
-export function TodayTab({ reminderInstances }: TodayTabProps) {
+export function TodayTab({ reminderInstances, loading = false }: TodayTabProps) {
   return (
     <div className="flex-1 overflow-auto p-6">
       <div className="max-w-3xl mx-auto">
@@ -20,9 +22,21 @@ export function TodayTab({ reminderInstances }: TodayTabProps) {
           {/* Timeline line */}
           <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
 
-          {reminderInstances.map((instance) => (
-            <TimelineItem key={instance.id} instance={instance} />
-          ))}
+          {loading ? (
+            <>
+              {Array.from({ length: 3 }).map((_, i) => (
+                <TimelineItemSkeleton key={i} />
+              ))}
+            </>
+          ) : reminderInstances.length > 0 ? (
+            reminderInstances.map((instance) => (
+              <TimelineItem key={instance.id} instance={instance} />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <p className="text-muted-foreground">No hay recordatorios para hoy</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button"
 import { Search, Pill } from "lucide-react"
 import { ReminderCard } from "./reminder-card"
+import { ReminderCardSkeleton } from "./reminder-card-skeleton"
 import { Reminder } from "./types"
 
 interface ConfigTabProps {
@@ -13,6 +14,8 @@ interface ConfigTabProps {
   onFilterChange: (filter: boolean | null) => void
   onCardClick: (reminder: Reminder) => void
   onToggleActive: (reminder: Reminder) => void
+  loading?: boolean
+  togglingReminderId?: number | null
 }
 
 export function ConfigTab({
@@ -23,9 +26,11 @@ export function ConfigTab({
   onFilterChange,
   onCardClick,
   onToggleActive,
+  loading = false,
+  togglingReminderId = null,
 }: ConfigTabProps) {
   const filteredReminders = reminders.filter((reminder) => {
-    const matchesSearch = reminder.medicine?.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = reminder.medicineData?.name.toLowerCase().includes(searchQuery.toLowerCase()) ?? false
     const matchesFilter = filterActive === null || reminder.is_active === filterActive
     return matchesSearch && matchesFilter
   })
@@ -61,25 +66,36 @@ export function ConfigTab({
       </div>
 
       <div className="flex-1 overflow-auto p-6">
-        <div className="grid gap-4">
-          {filteredReminders.map((reminder) => (
-            <ReminderCard
-              key={reminder.id}
-              reminder={reminder}
-              onCardClick={onCardClick}
-              onToggleActive={onToggleActive}
-            />
-          ))}
-        </div>
-
-        {filteredReminders.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <Pill className="w-16 h-16 text-muted-foreground/50 mb-4" />
-            <p className="text-lg font-medium text-foreground">No se encontraron recordatorios</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              {searchQuery ? "Intenta con otro término de búsqueda" : "Crea tu primer recordatorio"}
-            </p>
+        {loading ? (
+          <div className="grid gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <ReminderCardSkeleton key={i} />
+            ))}
           </div>
+        ) : (
+          <>
+            <div className="grid gap-4">
+              {filteredReminders.map((reminder) => (
+                <ReminderCard
+                  key={reminder.id}
+                  reminder={reminder}
+                  onCardClick={onCardClick}
+                  onToggleActive={onToggleActive}
+                  isToggling={togglingReminderId === reminder.id}
+                />
+              ))}
+            </div>
+
+            {filteredReminders.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 text-center">
+                <Pill className="w-16 h-16 text-muted-foreground/50 mb-4" />
+                <p className="text-lg font-medium text-foreground">No se encontraron recordatorios</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  {searchQuery ? "Intenta con otro término de búsqueda" : "Crea tu primer recordatorio"}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </>

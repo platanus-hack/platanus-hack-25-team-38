@@ -103,28 +103,7 @@ class ReminderSchedulerService:
         """
         Obtiene el emergency_contact según el reminder_type
         """
-        if reminder.reminder_type == "appointment":
-            # reminder.appointment_id es FK a appointments.id
-            if not reminder.appointment_id:
-                logger.error(f"Reminder {reminder.id} de tipo appointment no tiene appointment_id")
-                return None
-            
-            appointment = db.query(Appointment).filter(Appointment.id == reminder.appointment_id).first()
-            if not appointment:
-                logger.error(f"Appointment con ID {reminder.appointment_id} no encontrado")
-                return None
-            
-            elderly_profile = db.query(ElderlyProfile).filter(
-                ElderlyProfile.id == appointment.elderly_id
-            ).first()
-            
-            if not elderly_profile:
-                logger.error(f"ElderlyProfile con ID {appointment.elderly_id} no encontrado")
-                return None
-            
-            return elderly_profile.emergency_contact
-        
-        elif reminder.reminder_type == "medicine":
+        if reminder.reminder_type == "medicine":
             # reminder.medicine es FK a medicines.id
             if not reminder.medicine:
                 logger.error(f"Reminder {reminder.id} de tipo medicine no tiene campo medicine")
@@ -232,12 +211,6 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
             buttons = [
                 {"id": "taken", "title": "Ya lo tomé"},
                 {"id": "skip", "title": "Omitir"}
-            ]
-        elif reminder.reminder_type == "appointment":
-            message = "Recordatorio: Tienes una cita médica próximamente. Por favor confirma tu asistencia."
-            buttons = [
-                {"id": "confirm", "title": "Confirmar"},
-                {"id": "cancel", "title": "Cancelar"}
             ]
         else:
             message = "Tienes un recordatorio pendiente. Por favor confirma."
