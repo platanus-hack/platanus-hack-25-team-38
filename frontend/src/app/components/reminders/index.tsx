@@ -51,7 +51,7 @@ export function RemindersView() {
       setLoadingToday(true)
       setError(null)
       try {
-        const instancesData = await RemindersService.getReminderInstancesWithMedicine()
+        const instancesData = await RemindersService.getTodayReminderInstances()
         setReminderInstances(instancesData)
         setLoadedTabs((prev) => new Set(prev).add("today"))
       } catch (err) {
@@ -198,14 +198,8 @@ export function RemindersView() {
         <>
           {activeTab === "today" && (
             <TodayTab
-              reminderInstances={reminderInstances.filter((instance) => {
-                const instanceDate = new Date(instance.scheduled_datetime)
-                const today = new Date()
-                today.setHours(0, 0, 0, 0)
-                const tomorrow = new Date(today)
-                tomorrow.setDate(tomorrow.getDate() + 1)
-                return instanceDate >= today && instanceDate < tomorrow
-              })}
+              reminderInstances={reminderInstances}
+              loading={loadingToday}
             />
           )}
 

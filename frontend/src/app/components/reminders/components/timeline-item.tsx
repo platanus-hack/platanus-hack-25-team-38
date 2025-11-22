@@ -27,7 +27,7 @@ export function TimelineItem({ instance, onRectify }: TimelineItemProps) {
               : "bg-gray-300"
         }`}
       >
-        {instance.method === "whatsapp" ? (
+        {instance.method === "whatsapp" || !instance.method ? (
           <MessageCircle className="w-5 h-5 text-white" />
         ) : (
           <Phone className="w-5 h-5 text-white" />

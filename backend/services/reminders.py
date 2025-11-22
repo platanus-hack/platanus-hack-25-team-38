@@ -1,9 +1,10 @@
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import text
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from models import Reminder, Appointment, ElderlyProfile, Medicine  # Importar todas las tablas referenciadas
-from dtos.reminders import ReminderCreate, ReminderUpdate
+from dtos.reminders import ReminderCreate, ReminderUpdate, ReminderWithMedicineResponse
+from dtos.medicines import MedicineResponse
 
 
 class ReminderService:
@@ -91,4 +92,93 @@ class ReminderService:
         db.delete(reminder)
         db.commit()
         return True
+
+    @staticmethod
+    def get_all_with_medicine(db: Session, skip: int = 0, limit: int = 100) -> List[ReminderWithMedicineResponse]:
+        """Obtener todos los recordatorios con datos de medicina usando join"""
+        reminders = (
+            db.query(Reminder, Medicine)
+            .outerjoin(Medicine, Reminder.medicine == Medicine.id)
+            .offset(skip)
+            .limit(limit)
+            .all()
+        )
+        
+        result = []
+        for reminder, medicine in reminders:
+            medicine_data = None
+            if medicine:
+                medicine_data = MedicineResponse(
+                    id=medicine.id,
+                    name=medicine.name,
+                    dosage=medicine.dosage,
+                    total_tablets=medicine.total_tablets,
+                    tablets_left=medicine.tablets_left,
+                    tablets_per_dose=medicine.tablets_per_dose,
+                    notes=medicine.notes,
+                    created_at=medicine.created_at,
+                    updated_at=medicine.updated_at,
+                )
+            
+            reminder_response = ReminderWithMedicineResponse(
+                id=reminder.id,
+                reminder_type=reminder.reminder_type,
+                periodicity=reminder.periodicity,
+                start_date=reminder.start_date,
+                end_date=reminder.end_date,
+                medicine=reminder.medicine,
+                appointment_id=reminder.appointment_id,
+                elderly_profile_id=reminder.elderly_profile_id,
+                is_active=reminder.is_active,
+                created_at=reminder.created_at,
+                updated_at=reminder.updated_at,
+                medicineData=medicine_data
+            )
+            result.append(reminder_response)
+        
+        return result
+
+    @staticmethod
+    def get_active_with_medicine(db: Session) -> List[ReminderWithMedicineResponse]:
+        """Obtener todos los recordatorios activos con datos de medicina usando join"""
+        reminders = (
+            db.query(Reminder, Medicine)
+            .outerjoin(Medicine, Reminder.medicine == Medicine.id)
+            .filter(Reminder.is_active == True)
+            .all()
+        )
+        
+        result = []
+        for reminder, medicine in reminders:
+            medicine_data = None
+            if medicine:
+                medicine_data = MedicineResponse(
+                    id=medicine.id,
+                    name=medicine.name,
+                    dosage=medicine.dosage,
+                    total_tablets=medicine.total_tablets,
+                    tablets_left=medicine.tablets_left,
+                    tablets_per_dose=medicine.tablets_per_dose,
+                    notes=medicine.notes,
+                    created_at=medicine.created_at,
+                    updated_at=medicine.updated_at,
+                )
+            
+            reminder_response = ReminderWithMedicineResponse(
+                id=reminder.id,
+                reminder_type=reminder.reminder_type,
+                periodicity=reminder.periodicity,
+                start_date=reminder.start_date,
+                end_date=reminder.end_date,
+                medicine=reminder.medicine,
+                appointment_id=reminder.appointment_id,
+                elderly_profile_id=reminder.elderly_profile_id,
+                is_active=reminder.is_active,
+                created_at=reminder.created_at,
+                updated_at=reminder.updated_at,
+                medicineData=medicine_data
+            )
+            result.append(reminder_response)
+        
+        return result
 

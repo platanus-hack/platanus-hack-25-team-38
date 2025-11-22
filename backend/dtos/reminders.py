@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime, date
 from typing import Optional
+from dtos.medicines import MedicineResponse
 
 
 class ReminderCreate(BaseModel):
@@ -37,6 +38,25 @@ class ReminderResponse(BaseModel):
     is_active: Optional[bool]
     created_at: Optional[datetime]
     updated_at: Optional[datetime]
+
+    class Config:
+        from_attributes = True
+
+
+class ReminderWithMedicineResponse(BaseModel):
+    """Reminder response with medicine data included"""
+    id: int
+    reminder_type: str
+    periodicity: Optional[int]
+    start_date: datetime
+    end_date: Optional[date]
+    medicine: Optional[int]
+    appointment_id: Optional[int]
+    elderly_profile_id: Optional[int]
+    is_active: Optional[bool]
+    created_at: Optional[datetime]
+    updated_at: Optional[datetime]
+    medicineData: Optional[MedicineResponse] = None
 
     class Config:
         from_attributes = True
