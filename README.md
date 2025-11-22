@@ -27,7 +27,7 @@ Before Submitting:
 Have fun! 🚀
 
 ## Correr backend
-- python3.10 -m venv .venv 
+- python3.13 -m venv .venv 
 - source .venv/bin/activate
 - pip install -r requirements.txt
 - uvicorn app:app --reload
