@@ -5,7 +5,8 @@ from typing import List, Dict
 from integrations.twilio import create_call
 from integrations.gemini import generate_content
 from integrations.kapso import send_whatsapp_message
-# from database import Base, engine
+from routers import appointments, elderly_profiles, health_workers
+from database import Base, engine
 # from routers import auth
 # from config import settings
 
@@ -13,6 +14,10 @@ load_dotenv()
 
 app = FastAPI()
 
+# Importar todos los modelos para que estén registrados en Base.metadata
+from models import Appointment, ElderlyProfile, HealthWorker, User
+
+# Crear las tablas si no existen (solo en desarrollo, comentar en producción)
 # Base.metadata.create_all(bind=engine)
 
 class GeminiRequest(BaseModel):
@@ -61,5 +66,7 @@ async def send_whatsapp(request: WhatsAppRequest):
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
-# Example router
-# app.include_router(auth.router)
+# Routers
+app.include_router(appointments.router)
+app.include_router(elderly_profiles.router)
+app.include_router(health_workers.router)

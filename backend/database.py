@@ -1,8 +1,10 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from config import settings
+import os
 
-SQLALCHEMY_DATABASE_URL = settings.POSTGRES_URL
+# Usar POSTGRES_URL de settings o del entorno directamente
+SQLALCHEMY_DATABASE_URL = settings.POSTGRES_URL or os.getenv("POSTGRES_URL", "postgresql://user:password@localhost/dbname")
 
 engine = create_engine(SQLALCHEMY_DATABASE_URL, 
                         pool_pre_ping=True, 
