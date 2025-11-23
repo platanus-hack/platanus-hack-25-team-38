@@ -246,17 +246,20 @@ class ReminderCallService:
                 
                 # Actualizar reminder_instance a "waiting" (esperando respuesta)
                 instance_update = ReminderInstanceUpdate(
-                    status=ReminderInstanceStatus.WAITING.value
+                    status=ReminderInstanceStatus.SUCCESS.value
                 )
                 ReminderInstanceService.update(db, reminder_instance.id, instance_update)
                 
-                # Actualizar notification_log
-                log_update = NotificationLogUpdate(
+                # Crear nuevo notification_log de aprobado
+                approved_log_data = NotificationLogCreate(
+                    reminder_instance_id=reminder_instance.id,
+                    notification_type="call",
+                    recepient_phone=phone_number,
                     status="sent",
                     sent_at=datetime.now(),
                     response=f"Call SID: {call_sid}"
                 )
-                NotificationLogService.update(db, notification_log.id, log_update)
+                NotificationLogService.create(db, approved_log_data)
                 
                 result["success"] = True
                 logger.info(f"Llamada enviada exitosamente para reminder_instance {reminder_instance.id}. Call SID: {call_sid}")

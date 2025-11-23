@@ -70,23 +70,6 @@ def create_call(
         twiml=twiml
     )
     
-    # Update reminder instance status and create notification log if db and reminder_instance_id are provided
-    if db and reminder_instance_id:
-        reminder_instance = db.query(ReminderInstance).filter(ReminderInstance.id == reminder_instance_id).first()
-        if reminder_instance:
-            reminder_instance.status = ReminderInstanceStatus.SUCCESS.value
-            db.commit()
-            # Create notification log with status "sent"
-            notification_log = NotificationLog(
-                reminder_instance_id=reminder_instance_id,
-                notification_type="call",
-                recepient_phone=to,
-                status="sent",
-                sent_at=datetime.now()
-            )
-            db.add(notification_log)
-            db.commit()
-    
     return call.sid
 
 
