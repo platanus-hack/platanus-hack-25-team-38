@@ -37,21 +37,34 @@ def create_call(
         from_number = os.getenv('TWILIO_PHONE_NUMBER', '+19895752358')
     
     # Construir el mensaje TwiML
-    twiml = f"""<Response>
-              <Say voice="alice" language="es-ES">{message}</Say>"""
+    # twiml = f"""<Response>
+    #           <Say voice="alice" language="es-ES">{message}</Say>"""
     
-    # Si hay webhook_url, agregar Gather para recibir respuesta
-    print('webhook_url en create_call', webhook_url)
-    if webhook_url:
-        twiml += f"""
-              <Gather input="speech" language="es-ES" action="{f'webhook_url?reminder_instance_id={reminder_instance_id}'}">
-                <Say voice="alice" language="es-ES">
-                  Si ya lo hiciste, di "sí".
-                </Say>
-              </Gather>"""
+    # # Si hay webhook_url, agregar Gather para recibir respuesta
+    # print('webhook_url en create_call', webhook_url)
+    # if webhook_url:
+    #     twiml += f"""
+    #           <Gather input="speech" language="es-ES" action="{f'webhook_url?reminder_instance_id={reminder_instance_id}'}">
+    #             <Say voice="alice" language="es-ES">
+    #               Si ya lo hiciste, di "sí".
+    #             </Say>
+    #           </Gather>"""
     
-    twiml += """
-           </Response>"""
+    # twiml += """
+    #        </Response>"""
+    twiml = f"""
+<Response>
+    <Say voice="alice" language="es-ES">{message}</Say>
+
+    <Gather input="speech"
+            language="es-ES"
+            action="https://webhook.site/2aa03dd3-f1b5-4bdd-97a9-08379c8822d4">
+        <Say voice="alice" language="es-ES">
+            Si ya lo hiciste, di sí.
+        </Say>
+    </Gather>
+</Response>
+"""
     
     print('twiml en create_call', twiml)
     call = client.calls.create(
