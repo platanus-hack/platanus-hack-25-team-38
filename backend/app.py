@@ -88,6 +88,7 @@ async def create_phone_call(to: str = None, message: str = None):
         to_number = to or os.getenv('DEFAULT_PHONE_NUMBER', '+56979745451')
         call_message = message or "Hola, este es un recordatorio de prueba."
         
+        print('endpoint create call')
         call_sid = create_call(to_number, call_message)
         return {"status": "success", "message": "Llamada iniciada correctamente", "call_sid": call_sid}
     except Exception as e:
