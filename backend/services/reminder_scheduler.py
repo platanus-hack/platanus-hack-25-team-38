@@ -93,8 +93,8 @@ class ReminderSchedulerService:
                 )
             ).first()
             
-            if not existing_instance:
-                reminders_to_process.append((reminder, next_datetime))
+            # if not existing_instance:
+            reminders_to_process.append((reminder, next_datetime))
         
         return reminders_to_process
     
@@ -246,12 +246,13 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
                 return result
             
             # Verificar si ya existe una instancia para este reminder y scheduled_datetime
-            existing_instance = db.query(ReminderInstance).filter(
-                and_(
-                    ReminderInstance.reminder_id == reminder.id,
-                    ReminderInstance.scheduled_datetime == scheduled_datetime
-                )
-            ).first()
+            # existing_instance = db.query(ReminderInstance).filter(
+            #     and_(
+            #         ReminderInstance.reminder_id == reminder.id,
+            #         ReminderInstance.scheduled_datetime == scheduled_datetime
+            #     )
+            # ).first()
+            existing_instance = None
             
             if existing_instance:
                 reminder_instance = existing_instance
