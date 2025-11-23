@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import {
@@ -8,8 +9,11 @@ import {
   Clock,
   Power,
 } from "lucide-react"
-import { Reminder } from "./types"
+import { Reminder, ReminderInstance } from "./types"
 import { formatPeriodicity } from "@/lib/utils"
+import { ReminderInstanceTimeline } from "./reminder-instance-timeline"
+import { ReminderInstanceTimelineSkeleton } from "./reminder-instance-timeline-skeleton"
+import { api } from "@/lib/api"
 
 interface ReminderCardProps {
   reminder: Reminder
@@ -19,10 +23,28 @@ interface ReminderCardProps {
 }
 
 export function ReminderCard({ reminder, onCardClick, onToggleActive, isToggling = false }: ReminderCardProps) {
+  const [instances, setInstances] = useState<ReminderInstance[]>([])
+  const [loadingInstances, setLoadingInstances] = useState(false)
+  
   const medicine = reminder.medicineData
   const fillPercentage = medicine && medicine.total_tablets && medicine.tablets_left !== null
     ? (medicine.tablets_left / medicine.total_tablets) * 100
     : 0
+
+  useEffect(() => {
+    const loadInstances = async () => {
+      setLoadingInstances(true)
+      try {
+        const data = await api.getReminderInstancesByReminderWithMedicine(reminder.id, 5)
+        setInstances(data)
+      } catch (err) {
+        console.error("Error loading instances:", err)
+      } finally {
+        setLoadingInstances(false)
+      }
+    }
+    loadInstances()
+  }, [reminder.id])
 
   const handleCardClick = (e: React.MouseEvent) => {
     // Don't trigger card click if clicking on the toggle button
@@ -100,6 +122,22 @@ export function ReminderCard({ reminder, onCardClick, onToggleActive, isToggling
                 })}
               </span>
             </div>
+          </div>
+
+          {/* Timeline of recent reminders */}
+          <div className="mt-4 pt-4 border-t border-border">
+            <h4 className="text-xs font-semibold text-muted-foreground mb-3 uppercase tracking-wide">
+              Últimos Recordatorios
+            </h4>
+            {loadingInstances ? (
+              <ReminderInstanceTimelineSkeleton items={5} />
+            ) : instances.length > 0 ? (
+              <ReminderInstanceTimeline instances={instances} maxItems={5} />
+            ) : (
+              <div className="text-xs text-muted-foreground text-center py-2">
+                No hay recordatorios enviados
+              </div>
+            )}
           </div>
 
         </div>

@@ -78,6 +78,13 @@ class ApiClient {
     return response.data
   }
 
+  async getReminderInstancesByReminderWithMedicine(reminderId: number, limit?: number) {
+    const response = await this.client.get(`/reminder-instances/reminder/${reminderId}/with-medicine`, {
+      params: limit ? { limit } : {},
+    })
+    return response.data
+  }
+
   async getPendingReminderInstances() {
     const response = await this.client.get('/reminder-instances/pending/all')
     return response.data

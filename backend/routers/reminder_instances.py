@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List, Optional
 from database import get_db
 from services.reminder_instances import ReminderInstanceService
 from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate, ReminderInstanceResponse, ReminderInstanceWithMedicineResponse
@@ -71,6 +71,17 @@ async def get_reminder_instances_by_reminder(
 ):
     """Obtener todas las instancias de un recordatorio"""
     instances = ReminderInstanceService.get_by_reminder_id(db, reminder_id)
+    return instances
+
+
+@router.get("/reminder/{reminder_id}/with-medicine", response_model=List[ReminderInstanceWithMedicineResponse])
+async def get_reminder_instances_by_reminder_with_medicine(
+    reminder_id: int,
+    limit: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    """Obtener instancias de un recordatorio con datos de medicina (optimizado con join)"""
+    instances = ReminderInstanceService.get_by_reminder_id_with_medicine(db, reminder_id, limit=limit)
     return instances
 
 

@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, Suspense } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import {
@@ -9,20 +10,31 @@ import {
   MedicineDetailModal,
   DeleteConfirmationModal,
   ActivateReminderModal,
+  CreateReminderModal,
   Reminder,
 } from "./components"
 import { RemindersService } from "@/lib/reminders"
 import { api } from "@/lib/api"
 import type { ReminderInstance } from "./components/types"
 
-export function RemindersView() {
-  const [activeTab, setActiveTab] = useState<"today" | "config">("today")
+function RemindersViewContent() {
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  
+  // Get initial tab from URL or default to "today"
+  const getInitialTab = (): "today" | "config" => {
+    const tab = searchParams.get("tab")
+    return tab === "config" ? "config" : "today"
+  }
+  
+  const [activeTab, setActiveTab] = useState<"today" | "config">(getInitialTab())
   const [searchQuery, setSearchQuery] = useState("")
   const [filterActive, setFilterActive] = useState<boolean | null>(null)
   const [selectedReminder, setSelectedReminder] = useState<Reminder | null>(null)
   const [showMedicineDetail, setShowMedicineDetail] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showActivateDialog, setShowActivateDialog] = useState(false)
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
   
   // Data state - separate loading for each tab
   const [reminders, setReminders] = useState<Reminder[]>([])
@@ -38,6 +50,32 @@ export function RemindersView() {
   const [togglingReminderId, setTogglingReminderId] = useState<number | null>(null)
   const [deletingReminderId, setDeletingReminderId] = useState<number | null>(null)
   const [activatingReminderId, setActivatingReminderId] = useState<number | null>(null)
+
+  // Sync tab state with URL on mount and URL changes (browser back/forward)
+  useEffect(() => {
+    const urlTab = searchParams.get("tab")
+    const newTab = urlTab === "config" ? "config" : "today"
+    setActiveTab((currentTab) => {
+      // Only update if different to avoid unnecessary re-renders
+      return newTab !== currentTab ? newTab : currentTab
+    })
+  }, [searchParams])
+
+  // Sync URL when tab changes
+  useEffect(() => {
+    const currentTab = searchParams.get("tab")
+    const expectedTab = activeTab === "today" ? null : activeTab
+    if (currentTab !== expectedTab) {
+      const params = new URLSearchParams(searchParams.toString())
+      if (activeTab === "today") {
+        params.delete("tab") // Remove tab param for default (today)
+      } else {
+        params.set("tab", activeTab)
+      }
+      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
+      router.replace(newUrl, { scroll: false })
+    }
+  }, [activeTab, searchParams, router])
 
   // Load data when tab changes
   useEffect(() => {
@@ -160,7 +198,7 @@ export function RemindersView() {
             <h2 className="text-3xl font-bold text-foreground">Recordatorios</h2>
             <p className="text-muted-foreground mt-1">Gestiona los recordatorios de medicinas</p>
           </div>
-          <Button className="bg-primary hover:bg-primary/90">
+          <Button className="bg-primary hover:bg-primary/90" onClick={() => setShowCreateDialog(true)}>
             <Plus className="w-4 h-4 mr-2" />
             Nuevo
           </Button>
@@ -244,6 +282,23 @@ export function RemindersView() {
         onConfirm={handleActivateReminder}
         loading={activatingReminderId === selectedReminder?.id}
       />
+
+      <CreateReminderModal
+        isOpen={showCreateDialog}
+        onClose={() => setShowCreateDialog(false)}
+      />
     </div>
+  )
+}
+
+export function RemindersView() {
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center">
+        <div className="text-muted-foreground">Cargando...</div>
+      </div>
+    }>
+      <RemindersViewContent />
+    </Suspense>
   )
 }

@@ -3,7 +3,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy import and_, func, cast, Date
 from datetime import datetime, date, timedelta
 from typing import List, Optional, Dict, Any
-from models import ReminderInstance, Reminder, Medicine
+from models import ReminderInstance, Reminder, Medicine, NotificationLog
 from dtos.reminder_instances import ReminderInstanceCreate, ReminderInstanceUpdate, ReminderInstanceWithMedicineResponse
 
 
@@ -22,6 +22,66 @@ class ReminderInstanceService:
     def get_by_reminder_id(db: Session, reminder_id: int) -> List[ReminderInstance]:
         """Obtener todas las instancias de un recordatorio"""
         return db.query(ReminderInstance).filter(ReminderInstance.reminder_id == reminder_id).all()
+
+    @staticmethod
+    def get_by_reminder_id_with_medicine(
+        db: Session, 
+        reminder_id: int, 
+        limit: Optional[int] = None,
+        order_by_desc: bool = True
+    ) -> List[ReminderInstanceWithMedicineResponse]:
+        """Obtener instancias de un recordatorio con datos de medicina usando joins"""
+        query = (
+            db.query(ReminderInstance, Reminder, Medicine)
+            .join(Reminder, ReminderInstance.reminder_id == Reminder.id)
+            .outerjoin(Medicine, Reminder.medicine == Medicine.id)
+            .filter(ReminderInstance.reminder_id == reminder_id)
+        )
+        
+        # Order by scheduled_datetime (most recent first by default)
+        if order_by_desc:
+            query = query.order_by(ReminderInstance.scheduled_datetime.desc())
+        else:
+            query = query.order_by(ReminderInstance.scheduled_datetime.asc())
+        
+        # Apply limit if provided
+        if limit:
+            query = query.limit(limit)
+        
+        instances = query.all()
+        
+        result = []
+        for instance, reminder, medicine in instances:
+            # Get method from notification log (most recent one for this instance)
+            notification_log = (
+                db.query(NotificationLog)
+                .filter(NotificationLog.reminder_instance_id == instance.id)
+                .order_by(NotificationLog.sent_at.desc())
+                .first()
+            )
+            method = notification_log.notification_type if notification_log else None
+            
+            instance_response = ReminderInstanceWithMedicineResponse(
+                id=instance.id,
+                reminder_id=instance.reminder_id,
+                scheduled_datetime=instance.scheduled_datetime,
+                status=instance.status,
+                taken_at=instance.taken_at,
+                retry_count=instance.retry_count,
+                max_retries=instance.max_retries,
+                family_notified=instance.family_notified,
+                family_notified_at=instance.family_notified_at,
+                notes=instance.notes,
+                created_at=instance.created_at,
+                updated_at=instance.updated_at,
+                message_id=instance.message_id,
+                medicine_name=medicine.name if medicine else None,
+                dosage=medicine.dosage if medicine else None,
+                method=method
+            )
+            result.append(instance_response)
+        
+        return result
 
     @staticmethod
     def get_by_status(db: Session, status: str) -> List[ReminderInstance]:
