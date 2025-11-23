@@ -116,7 +116,7 @@ export function MonthlyCalendarView({
                       <span className={clsx("text-xs font-semibold", currentDate.getDate() === day && "text-primary")}>
                         {day}
                       </span>
-                      {dayEvents.slice(0, 2).map((event) => (
+                      {dayEvents.slice(0, 3).map((event) => (
                         <div
                           key={event.id}
                           className={clsx(
@@ -128,6 +128,11 @@ export function MonthlyCalendarView({
                           {event.type === "medicine" ? "💊" : "🏥"} {event.title.slice(0, 10)}
                         </div>
                       ))}
+                      {dayEvents.length > 3 && (
+                        <div className="w-full text-[10px] font-medium rounded px-1 py-0.5 mt-0.5 text-muted-foreground">
+                          +{dayEvents.length - 3} más
+                        </div>
+                      )}
                     </button>
 
                     {isHovered && (

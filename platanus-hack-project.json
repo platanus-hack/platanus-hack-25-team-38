@@ -1,4 +1,5 @@
 {
   "project-name": "Memo",
-  "project-description-spanish": "Una herramienta enfocada en los adultos mayoes que moderniza la toma de medicamentos utilizando lo que ellos ya utilizan: llamadas telefónicas y WhatsApp. Es territorio conocido para ellos, eliminando la barrera tecnológica, mientras ofrecemos a las familias un seguimiento centralizado, seguro y en tiempo real."
+  "project-description-spanish": "Una herramienta enfocada en los adultos mayoes que moderniza la toma de medicamentos utilizando lo que ellos ya utilizan: llamadas telefónicas y WhatsApp. Es territorio conocido para ellos, eliminando la barrera tecnológica, mientras ofrecemos a las familias un seguimiento centralizado, seguro y en tiempo real.",
+  "deploy-url": "https://platanus-hack-team-38.vercel.app/"
 }
