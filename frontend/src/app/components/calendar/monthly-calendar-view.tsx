@@ -61,7 +61,7 @@ export function MonthlyCalendarView({
     <div className="h-full flex flex-col bg-background">
       <div className="p-6">
         <h2 className="text-3xl font-bold text-foreground">Calendario</h2>
-        <p className="text-muted-foreground mt-1">Eventos de medicinas y citas médicas</p>
+        <p className="text-muted-foreground mt-1">Eventos de medicinas</p>
       </div>
 
       <div className="flex-1 overflow-auto p-6">
