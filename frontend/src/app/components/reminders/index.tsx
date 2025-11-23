@@ -237,7 +237,6 @@ function RemindersViewContent() {
           {activeTab === "today" && (
             <TodayTab
               reminderInstances={reminderInstances}
-              loading={loadingToday}
             />
           )}
 
