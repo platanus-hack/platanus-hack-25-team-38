@@ -12,7 +12,7 @@ import {
   ActivateReminderModal,
   CreateReminderModal,
   Reminder,
-  TimelineItemSkeleton,
+  TodayTabSkeleton,
 } from "./components"
 import { RemindersService } from "@/lib/reminders"
 import { api } from "@/lib/api"
@@ -208,16 +208,7 @@ function RemindersViewContent() {
         <>
           {activeTab === "today" && (
             loadingToday ? (
-              <div className="flex-1 overflow-auto p-6">
-                <div className="max-w-5xl mx-auto">
-                  <div className="relative space-y-6">
-                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
-                    {[1, 2, 3].map((i) => (
-                      <TimelineItemSkeleton key={i} />
-                    ))}
-                  </div>
-                </div>
-              </div>
+              <TodayTabSkeleton />
             ) : (
               <TodayTab 
                 reminderInstances={reminderInstances} 
