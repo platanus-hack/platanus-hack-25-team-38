@@ -28,7 +28,7 @@ Have fun! 🚀
 
 ---
 
-# Memo 🐕
+# Memo 👴
 
 Sistema de recordatorios y gestión de cuidado para adultos mayores.
 
