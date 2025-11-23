@@ -39,7 +39,7 @@ export function Sidebar({ activeView, onViewChange, onPatientClick, isProfileVie
             </div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold text-foreground">Memo</h1>
-              <p className="text-xs text-muted-foreground truncate">Cuidado para el abuelo</p>
+              <p className="text-xs text-muted-foreground truncate">Cuidado para los abuelos</p>
             </div>
           </div>
         )}
