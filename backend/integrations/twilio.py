@@ -1,6 +1,10 @@
 import os
 from twilio.rest import Client
 from typing import Optional
+from sqlalchemy.orm import Session
+from datetime import datetime
+from models import ReminderInstance, NotificationLog
+from enums import ReminderInstanceStatus
 
 
 def create_call(
@@ -8,7 +12,8 @@ def create_call(
     message: str,
     from_number: Optional[str] = None,
     webhook_url: Optional[str] = None,
-    reminder_instance_id: Optional[int] = None
+    reminder_instance_id: Optional[int] = None,
+    db: Optional[Session] = None
 ) -> str:
     """
     Crea una llamada telefónica usando Twilio
@@ -64,6 +69,23 @@ def create_call(
         to=to,
         twiml=twiml
     )
+    
+    # Update reminder instance status and create notification log if db and reminder_instance_id are provided
+    if db and reminder_instance_id:
+        reminder_instance = db.query(ReminderInstance).filter(ReminderInstance.id == reminder_instance_id).first()
+        if reminder_instance:
+            reminder_instance.status = ReminderInstanceStatus.SUCCESS.value
+            db.commit()
+            # Create notification log with status "sent"
+            notification_log = NotificationLog(
+                reminder_instance_id=reminder_instance_id,
+                notification_type="call",
+                recepient_phone=to,
+                status="sent",
+                sent_at=datetime.now()
+            )
+            db.add(notification_log)
+            db.commit()
     
     return call.sid
 
