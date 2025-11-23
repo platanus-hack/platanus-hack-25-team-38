@@ -35,7 +35,7 @@ class ReminderInstanceService:
             db.query(ReminderInstance, Reminder, Medicine)
             .join(Reminder, ReminderInstance.reminder_id == Reminder.id)
             .outerjoin(Medicine, Reminder.medicine == Medicine.id)
-            .filter(ReminderInstance.reminder_id == reminder_id)
+            .filter(and_(ReminderInstance.reminder_id == reminder_id, ReminderInstance.status != 'pending'))
         )
         
         # Order by scheduled_datetime (most recent first by default)
