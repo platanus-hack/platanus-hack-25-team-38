@@ -240,7 +240,7 @@ class ReminderCallService:
             try:
                 print('process reminder call')
                 logger.info(f"Enviando llamada a {phone_number} con mensaje: {message}")
-                call_sid = create_call(phone_number, message, webhook_url=webhook_url, reminder_instance_id=reminder_instance.id)
+                call_sid = create_call(phone_number, message, webhook_url=webhook_url, reminder_instance_id=reminder_instance.id, db=db)
                 
                 result["call_sid"] = call_sid
                 
