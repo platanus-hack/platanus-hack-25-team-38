@@ -22,6 +22,7 @@ def create_call(
     Returns:
         call_sid: ID de la llamada creada
     """
+    print('create call')
     print('reminder_instance_id en create_call', reminder_instance_id)
     account_sid = os.getenv('TWILIO_ACCOUNT_SID')
     auth_token = os.getenv('TWILIO_AUTH_TOKEN')
@@ -63,6 +64,7 @@ def create_call(
 
 
 if __name__ == "__main__":
+    print('create call if name == main')
     create_call(
         to='+56979745451',
         message='Hola abuelo, recuerda tomar tu dosis de 500mg de paracetamol.'
