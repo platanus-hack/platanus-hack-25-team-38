@@ -217,10 +217,13 @@ class ReminderCallService:
             
             # Generar mensaje
             message = ReminderCallService.generate_call_message(db, reminder)
+            print('message from generate_call_message', message)
+            logger.info(f"Mensaje generado para la llamada: {message}")
             
             # Obtener webhook URL si está configurada
             webhook_url = os.getenv('TWILIO_WEBHOOK_URL')
             print(f"Webhook URL: {webhook_url}")
+            logger.info(f"Webhook URL: {webhook_url}")
             
             # Crear notification_log antes de enviar la llamada
             log_data = NotificationLogCreate(
@@ -235,6 +238,7 @@ class ReminderCallService:
             # Enviar llamada
             try:
                 print('process reminder call')
+                logger.info(f"Enviando llamada a {phone_number} con mensaje: {message}")
                 call_sid = create_call(phone_number, message, webhook_url=webhook_url, reminder_instance_id=reminder_instance.id)
                 
                 result["call_sid"] = call_sid
