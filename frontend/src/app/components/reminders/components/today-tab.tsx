@@ -27,7 +27,9 @@ export function TodayTab({ reminderInstances, onRefresh }: TodayTabProps) {
   const handleMarkAsTaken = async (instanceId: number) => {
     setMarkingId(instanceId)
     try {
-      const takenAt = new Date().toISOString()
+      const now = new Date()
+      const chileTime = new Date(now.getTime() - (3 * 60 * 60 * 1000)) // Subtract 3 hours
+      const takenAt = chileTime.toISOString()
       await api.patchReminderInstance(instanceId, {
         status: "success",
         taken_at: takenAt,
