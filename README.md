@@ -4,6 +4,8 @@
 
 <img src="./project-logo.png" alt="Project Logo" width="200" />
 
+Ve a [Memo](https://platanus-hack-team-38.vercel.app/)
+
 Submission Deadline: 23rd Nov, 9:00 AM, Chile time.
 
 Track: ☎️ legacy
