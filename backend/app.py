@@ -6,13 +6,10 @@ from typing import List, Dict
 import os
 from integrations.twilio import create_call
 from integrations.gemini import generate_content
-from integrations.kapso import send_whatsapp_message
 from integrations.telegram import send_telegram_message
 from routers import appointments, elderly_profiles, health_workers, users, medicines, notification_logs, reminders, reminder_instances, family_elderly_relationship
 from database import Base, engine
 from services.cron_service import init_scheduler, shutdown_scheduler
-# from routers import auth
-# from config import settings
 import os
 
 load_dotenv()
@@ -27,20 +24,7 @@ app.add_middleware(
         "http://localhost:3001",
         "http://127.0.0.1:3000",
         "http://127.0.0.1:3001",
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# Configure CORS
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",
-        "http://localhost:3001",
-        "http://127.0.0.1:3000",
-        "http://127.0.0.1:3001",
+        "https://platanus-hack-team-38.vercel.app"
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -59,12 +43,6 @@ async def startup_event():
 async def shutdown_event():
     shutdown_scheduler()
     print("✅ Scheduler de recordatorios detenido")
-
-# Importar todos los modelos para que estén registrados en Base.metadata
-from models import Appointment, ElderlyProfile, HealthWorker, User, Medicine, NotificationLog, ReminderInstance, Reminder, FamilyElderlyRelationship
-
-# Crear las tablas si no existen (solo en desarrollo, comentar en producción)
-# Base.metadata.create_all(bind=engine)
 
 class GeminiRequest(BaseModel):
     text: str
