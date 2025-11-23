@@ -64,12 +64,11 @@ El API estará disponible en `http://localhost:8000`
 
 - **Frontend:** Next.js 16, React 19, Tailwind CSS, shadcn/ui
 - **Backend:** FastAPI, PostgreSQL (Neon)
-- **Integraciones:** WhatsApp API, llamadas automatizadas
+- **Integraciones:** Gemini AI, Kapso, Telegram, Twilio
 
 ## 📦 Funcionalidades
 
-- ✅ Recordatorios automáticos de medicamentos vía WhatsApp
+- ✅ Recordatorios automáticos de medicamentos vía WhatsApp/Telegram
 - 📅 Calendario de eventos médicos
-- 👨‍⚕️ Gestión de citas con profesionales de la salud
 - 👪 Dashboard para familiares
 - 📊 Seguimiento de medicación
