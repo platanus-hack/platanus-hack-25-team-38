@@ -251,7 +251,10 @@ class ReminderCallService:
                 ReminderInstanceService.update(db, reminder_instance.id, instance_update)
                 
                 # Actualizar notification_log
-                log_update = NotificationLogUpdate(
+                approved_log_data = NotificationLogCreate(
+                    reminder_instance_id=reminder_instance.id,
+                    notification_type="call",
+                    recepient_phone=phone_number,
                     status="sent",
                     sent_at=datetime.now(),
                     response=f"Call SID: {call_sid}"
