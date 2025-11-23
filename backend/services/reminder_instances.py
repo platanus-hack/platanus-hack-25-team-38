@@ -152,6 +152,26 @@ class ReminderInstanceService:
         return True
 
     @staticmethod
+    def _get_method_from_notification_log(db: Session, instance_id: int) -> Optional[str]:
+        """Obtener el método (whatsapp/call) del NotificationLog más reciente para una instancia"""
+        notification_log = (
+            db.query(NotificationLog)
+            .filter(NotificationLog.reminder_instance_id == instance_id)
+            .order_by(NotificationLog.sent_at.desc())
+            .first()
+        )
+        
+        if notification_log and notification_log.notification_type:
+            # Normalizar el tipo de notificación a "whatsapp" o "call"
+            notification_type = notification_log.notification_type.lower()
+            if notification_type == "whatsapp":
+                return "whatsapp"
+            elif notification_type == "call":
+                return "call"
+        
+        return None
+
+    @staticmethod
     def get_all_with_medicine(db: Session, skip: int = 0, limit: int = 100) -> List[ReminderInstanceWithMedicineResponse]:
         """Obtener todas las instancias con datos de reminder y medicina usando joins"""
         instances = (
@@ -165,6 +185,8 @@ class ReminderInstanceService:
         
         result = []
         for instance, reminder, medicine in instances:
+            method = ReminderInstanceService._get_method_from_notification_log(db, instance.id)
+            
             instance_response = ReminderInstanceWithMedicineResponse(
                 id=instance.id,
                 reminder_id=instance.reminder_id,
@@ -181,7 +203,7 @@ class ReminderInstanceService:
                 message_id=instance.message_id,
                 medicine_name=medicine.name if medicine else None,
                 dosage=medicine.dosage if medicine else None,
-                method=None
+                method=method
             )
             result.append(instance_response)
         
@@ -212,6 +234,8 @@ class ReminderInstanceService:
         
         result = []
         for instance, reminder, medicine in instances:
+            method = ReminderInstanceService._get_method_from_notification_log(db, instance.id)
+            
             instance_response = ReminderInstanceWithMedicineResponse(
                 id=instance.id,
                 reminder_id=instance.reminder_id,
@@ -228,7 +252,7 @@ class ReminderInstanceService:
                 message_id=instance.message_id,
                 medicine_name=medicine.name if medicine else None,
                 dosage=medicine.dosage if medicine else None,
-                method=None
+                method=method
             )
             result.append(instance_response)
         
@@ -258,6 +282,8 @@ class ReminderInstanceService:
         
         result = []
         for instance, reminder, medicine in instances:
+            method = ReminderInstanceService._get_method_from_notification_log(db, instance.id)
+            
             instance_response = ReminderInstanceWithMedicineResponse(
                 id=instance.id,
                 reminder_id=instance.reminder_id,
@@ -274,7 +300,7 @@ class ReminderInstanceService:
                 message_id=instance.message_id,
                 medicine_name=medicine.name if medicine else None,
                 dosage=medicine.dosage if medicine else None,
-                method=None
+                method=method
             )
             result.append(instance_response)
         

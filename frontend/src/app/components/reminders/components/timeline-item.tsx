@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { MessageCircle, Phone, Pill, RotateCcw, History, Check } from "lucide-react"
 import { ReminderInstance } from "./types"
 import ReminderLogModal from "./reminder-log-modal"
@@ -10,9 +11,10 @@ import ReminderLogModal from "./reminder-log-modal"
 interface TimelineItemProps {
   instance: ReminderInstance
   onRectify?: (id: number) => void
+  isMarking?: boolean
 }
 
-export function TimelineItem({ instance, onRectify }: TimelineItemProps) {
+export function TimelineItem({ instance, onRectify, isMarking = false }: TimelineItemProps) {
   const [showLog, setShowLog] = useState(false)
 
   return (
@@ -65,12 +67,10 @@ export function TimelineItem({ instance, onRectify }: TimelineItemProps) {
             <h4 className="text-lg font-bold text-foreground">{instance.medicine_name}</h4>
             <p className="text-sm text-muted-foreground">{instance.dosage}</p>
 
-            {instance.retry_count && instance.retry_count > 0 && (
-              <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
-                <RotateCcw className="w-3 h-3" />
-                <span>{instance.retry_count} reintentos</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1 mt-2 text-xs text-muted-foreground">
+              <RotateCcw className="w-3 h-3" />
+              <span>Intentos: {instance.retry_count || 0}</span>
+            </div>
 
             {instance.taken_at && (
               <p className="text-xs text-muted-foreground mt-2">
@@ -85,17 +85,49 @@ export function TimelineItem({ instance, onRectify }: TimelineItemProps) {
 
           <div className="flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
-              {instance.status === "failed" && onRectify && (
-                <Button size="sm" variant="outline" onClick={() => onRectify(instance.id)}>
+              {(instance.status === "failed" || instance.status === "pending") && onRectify && (
+                <Button 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={() => onRectify(instance.id)}
+                  disabled={isMarking}
+                >
                   <Check className="w-4 h-4 mr-2" />
-                  Rectificar
+                  {isMarking ? "Guardando..." : "Marcar como tomado"}
                 </Button>
               )}
               <Button variant="ghost" size="icon" onClick={() => setShowLog(true)} aria-label="Ver historial">
                 <History className="w-5 h-5" />
               </Button>
             </div>
-            <Pill className="w-8 h-8 text-primary" />
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    e.stopPropagation()
+                    if (onRectify && instance.status !== "success" && !isMarking) {
+                      onRectify(instance.id)
+                    }
+                  }}
+                  disabled={isMarking || instance.status === "success"}
+                  className={`relative z-10 transition-all duration-200 p-2 rounded-md touch-manipulation ${
+                    instance.status === "success"
+                      ? "text-green-600 cursor-default"
+                      : instance.status !== "success" && !isMarking
+                        ? "text-primary hover:text-primary/80 hover:bg-primary/10 hover:scale-110 cursor-pointer active:scale-95 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2"
+                        : "text-muted-foreground cursor-default"
+                  } ${isMarking ? "opacity-50 cursor-not-allowed" : ""}`}
+                  aria-label={instance.status === "success" ? "Medicamento tomado" : "Marcar como tomado"}
+                  type="button"
+                >
+                  <Pill className="w-8 h-8 pointer-events-none" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                {instance.status === "success" ? "Medicamento tomado" : "Marcar como tomado"}
+              </TooltipContent>
+            </Tooltip>
           </div>
         </div>
       </Card>
