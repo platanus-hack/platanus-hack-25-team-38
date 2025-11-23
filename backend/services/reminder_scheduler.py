@@ -230,6 +230,7 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
         """
         Procesa un reminder: crea reminder_instance, envía WhatsApp y actualiza estados
         """
+        print('en process reminder')
         result = {
             "reminder_id": reminder.id,
             "success": False,
@@ -259,6 +260,7 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
                 logger.info(f"Usando ReminderInstance existente {reminder_instance.id} para reminder {reminder.id}")
             else:
                 # Crear nueva instancia
+                print('crear nueva instancia')
                 instance_data = ReminderInstanceCreate(
                     reminder_id=reminder.id,
                     scheduled_datetime=scheduled_datetime,
@@ -318,6 +320,7 @@ Solo devuelve el mensaje, sin comillas ni formato adicional."""
                 if "messages" in response and len(response["messages"]) > 0:
                     message_id = response["messages"][0].get("id")
                 print(f"Mensaje de WhatsApp enviado - message_id: {message_id}, to: {emergency_contact}")
+                print(f"reminder instance id: {reminder_instance.id}")
                 instance_update = ReminderInstanceUpdate(
                     status=ReminderInstanceStatus.WAITING.value,
                     message_id=str(message_id)
