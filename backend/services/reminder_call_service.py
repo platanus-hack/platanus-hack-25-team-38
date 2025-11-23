@@ -191,6 +191,7 @@ class ReminderCallService:
         Returns:
             Diccionario con el resultado del procesamiento
         """
+        print('in process_reminder_call', flush=True)
         result = {
             "reminder_instance_id": reminder_instance.id,
             "success": False,
@@ -217,7 +218,7 @@ class ReminderCallService:
             
             # Generar mensaje
             message = ReminderCallService.generate_call_message(db, reminder)
-            print('message from generate_call_message', message)
+            print('message from generate_call_message', message, flush=True)
             logger.info(f"Mensaje generado para la llamada: {message}")
             
             # Obtener webhook URL si está configurada
@@ -300,6 +301,7 @@ class ReminderCallService:
         print('in async process_pending_calls', flush=True)
         logger.info('logger.info in async process_pending_calls')
         pending_instances = ReminderCallService.get_pending_instances_for_call(db)
+        print('pending_instances from get_pending_instances_for_call', pending_instances, flush=True)
         
         results = {
             "processed": 0,
@@ -309,6 +311,7 @@ class ReminderCallService:
         }
         
         for instance in pending_instances:
+            print('before process_reminder_call', flush=True)
             result = await ReminderCallService.process_reminder_call(db, instance)
             print('result from process_reminder_call', result, flush=True)
             results["processed"] += 1
