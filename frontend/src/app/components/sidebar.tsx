@@ -1,6 +1,6 @@
 "use client"
 
-import { Calendar, Pill, Stethoscope, ChevronLeft } from "lucide-react"
+import { Calendar, Pill, ChevronLeft } from "lucide-react"
 import { useState } from "react"
 import clsx from "clsx"
 
@@ -8,9 +8,10 @@ interface SidebarProps {
   activeView: "calendar" | "reminders" | "appointments"
   onViewChange: (view: "calendar" | "reminders" | "appointments") => void
   onPatientClick?: () => void
+  isProfileView?: boolean
 }
 
-export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarProps) {
+export function Sidebar({ activeView, onViewChange, onPatientClick, isProfileView = false }: SidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
   const menuItems = [
@@ -59,7 +60,7 @@ export function Sidebar({ activeView, onViewChange, onPatientClick }: SidebarPro
                 onClick={() => onViewChange(id as "calendar" | "reminders")}
                 className={clsx(
                   "w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 relative",
-                  activeView === id ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted",
+                  !isProfileView && activeView === id ? "bg-primary text-primary-foreground shadow-md" : "text-foreground hover:bg-muted",
                 )}
                 title={isCollapsed ? label : undefined}
               >

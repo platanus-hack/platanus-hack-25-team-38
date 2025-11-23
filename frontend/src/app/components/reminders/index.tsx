@@ -1,7 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
-import { useSearchParams, useRouter } from "next/navigation"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
 import { Plus } from "lucide-react"
 import {
@@ -12,6 +11,7 @@ import {
   ActivateReminderModal,
   CreateReminderModal,
   Reminder,
+  TimelineItemSkeleton,
 } from "./components"
 import { RemindersService } from "@/lib/reminders"
 import { api } from "@/lib/api"
@@ -43,55 +43,28 @@ function RemindersViewContent() {
   const [loadingConfig, setLoadingConfig] = useState(false)
   const [error, setError] = useState<string | null>(null)
   
-  // Track which tabs have been loaded
-  const [loadedTabs, setLoadedTabs] = useState<Set<"today" | "config">>(new Set())
+  // Track which tabs have been loaded using ref to avoid re-renders
+  const loadedTabsRef = useRef<Set<"today" | "config">>(new Set())
   
   // Action loading states
   const [togglingReminderId, setTogglingReminderId] = useState<number | null>(null)
   const [deletingReminderId, setDeletingReminderId] = useState<number | null>(null)
   const [activatingReminderId, setActivatingReminderId] = useState<number | null>(null)
 
-  // Sync tab state with URL on mount and URL changes (browser back/forward)
-  useEffect(() => {
-    const urlTab = searchParams.get("tab")
-    const newTab = urlTab === "config" ? "config" : "today"
-    setActiveTab((currentTab) => {
-      // Only update if different to avoid unnecessary re-renders
-      return newTab !== currentTab ? newTab : currentTab
-    })
-  }, [searchParams])
-
-  // Sync URL when tab changes
-  useEffect(() => {
-    const currentTab = searchParams.get("tab")
-    const expectedTab = activeTab === "today" ? null : activeTab
-    if (currentTab !== expectedTab) {
-      const params = new URLSearchParams(searchParams.toString())
-      if (activeTab === "today") {
-        params.delete("tab") // Remove tab param for default (today)
-      } else {
-        params.set("tab", activeTab)
-      }
-      const newUrl = params.toString() ? `?${params.toString()}` : window.location.pathname
-      router.replace(newUrl, { scroll: false })
+  // Memoized loadTabData function
+  const loadTabData = useCallback(async (tab: "today" | "config", forceReload = false) => {
+    // Skip if already loaded and not forcing reload
+    if (!forceReload && loadedTabsRef.current.has(tab)) {
+      return
     }
-  }, [activeTab, searchParams, router])
 
-  // Load data when tab changes
-  useEffect(() => {
-    if (!loadedTabs.has(activeTab)) {
-      loadTabData(activeTab)
-    }
-  }, [activeTab, loadedTabs])
-
-  const loadTabData = async (tab: "today" | "config") => {
     if (tab === "today") {
       setLoadingToday(true)
       setError(null)
       try {
         const instancesData = await RemindersService.getTodayReminderInstances()
         setReminderInstances(instancesData)
-        setLoadedTabs((prev) => new Set(prev).add("today"))
+        loadedTabsRef.current.add("today")
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al cargar datos")
         console.error("Error loading today data:", err)
@@ -104,7 +77,7 @@ function RemindersViewContent() {
       try {
         const remindersData = await RemindersService.getRemindersWithMedicine()
         setReminders(remindersData)
-        setLoadedTabs((prev) => new Set(prev).add("config"))
+        loadedTabsRef.current.add("config")
       } catch (err) {
         setError(err instanceof Error ? err.message : "Error al cargar datos")
         console.error("Error loading config data:", err)
@@ -112,18 +85,21 @@ function RemindersViewContent() {
         setLoadingConfig(false)
       }
     }
-  }
+  }, [])
 
-  const handleToggleActive = async (reminder: Reminder) => {
+  // Load data when tab changes - only depends on activeTab
+  useEffect(() => {
+    loadTabData(activeTab)
+  }, [activeTab, loadTabData])
+
+  const handleToggleActive = useCallback(async (reminder: Reminder) => {
     if (reminder.is_active) {
       // Deactivate immediately
       setTogglingReminderId(reminder.id)
       try {
         await api.patchReminder(reminder.id, { is_active: false })
         // Reload config tab data
-        if (loadedTabs.has("config")) {
-          await loadTabData("config")
-        }
+        await loadTabData("config", true)
       } catch (err) {
         console.error("Error deactivating reminder:", err)
         alert("Error al desactivar el recordatorio")
@@ -135,9 +111,9 @@ function RemindersViewContent() {
       setSelectedReminder(reminder)
       setShowActivateDialog(true)
     }
-  }
+  }, [loadTabData])
 
-  const handleDeleteReminder = async () => {
+  const handleDeleteReminder = useCallback(async () => {
     if (!selectedReminder) return
     
     setDeletingReminderId(selectedReminder.id)
@@ -146,27 +122,25 @@ function RemindersViewContent() {
       setShowDeleteDialog(false)
       setShowMedicineDetail(false)
       // Reload config tab data
-      if (loadedTabs.has("config")) {
-        await loadTabData("config")
-      }
+      await loadTabData("config", true)
     } catch (err) {
       console.error("Error deleting reminder:", err)
       alert("Error al eliminar el recordatorio")
     } finally {
       setDeletingReminderId(null)
     }
-  }
+  }, [selectedReminder, loadTabData])
 
-  const handleCardClick = (reminder: Reminder) => {
+  const handleCardClick = useCallback((reminder: Reminder) => {
     setSelectedReminder(reminder)
     setShowMedicineDetail(true)
-  }
+  }, [])
 
-  const handleShowDeleteDialog = () => {
+  const handleShowDeleteDialog = useCallback(() => {
     setShowDeleteDialog(true)
-  }
+  }, [])
 
-  const handleActivateReminder = async () => {
+  const handleActivateReminder = useCallback(async () => {
     if (!selectedReminder) return
     
     setActivatingReminderId(selectedReminder.id)
@@ -174,20 +148,18 @@ function RemindersViewContent() {
       await api.patchReminder(selectedReminder.id, { is_active: true })
       setShowActivateDialog(false)
       // Reload config tab data
-      if (loadedTabs.has("config")) {
-        await loadTabData("config")
-      }
+      await loadTabData("config", true)
     } catch (err) {
       console.error("Error activating reminder:", err)
       alert("Error al activar el recordatorio")
     } finally {
       setActivatingReminderId(null)
     }
-  }
+  }, [selectedReminder, loadTabData])
   
-  const handleTabChange = (tab: "today" | "config") => {
+  const handleTabChange = useCallback((tab: "today" | "config") => {
     setActiveTab(tab)
-  }
+  }, [])
 
   return (
     <div className="h-full flex flex-col bg-background">
@@ -235,10 +207,23 @@ function RemindersViewContent() {
       {!error && (
         <>
           {activeTab === "today" && (
-            <TodayTab
-              reminderInstances={reminderInstances}
-              loading={loadingToday}
-            />
+            loadingToday ? (
+              <div className="flex-1 overflow-auto p-6">
+                <div className="max-w-5xl mx-auto">
+                  <div className="relative space-y-6">
+                    <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-border"></div>
+                    {[1, 2, 3].map((i) => (
+                      <TimelineItemSkeleton key={i} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <TodayTab 
+                reminderInstances={reminderInstances} 
+                onRefresh={() => loadTabData("today", true)}
+              />
+            )
           )}
 
           {activeTab === "config" && (
