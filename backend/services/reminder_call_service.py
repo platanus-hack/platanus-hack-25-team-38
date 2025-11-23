@@ -256,7 +256,8 @@ class ReminderCallService:
                     sent_at=datetime.now(),
                     response=f"Call SID: {call_sid}"
                 )
-                NotificationLogService.update(db, notification_log.id, log_update)
+                NotificationLogService.create(db, approved_log_data)
+                db.commit()
                 
                 result["success"] = True
                 logger.info(f"Llamada enviada exitosamente para reminder_instance {reminder_instance.id}. Call SID: {call_sid}")
