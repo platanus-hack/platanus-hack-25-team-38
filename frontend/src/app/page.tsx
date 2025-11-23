@@ -29,7 +29,7 @@ export default function Home() {
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar activeView={activeView} onViewChange={handleViewChange} onPatientClick={handlePatientClick} />
+      <Sidebar activeView={activeView} onViewChange={handleViewChange} onPatientClick={handlePatientClick} isProfileView={showPatientProfile} />
       <main className="flex-1 overflow-y-auto">
         {showPatientProfile ? (
           <PatientProfile onBack={handleBackFromProfile} />

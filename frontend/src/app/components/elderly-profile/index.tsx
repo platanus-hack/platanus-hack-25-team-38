@@ -1,9 +1,9 @@
 "use client"
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ArrowLeft, Edit2 } from "lucide-react"
+import { VideoAnimation } from "../reminders/components/video-animation"
 
 interface PatientProfileProps {
   onBack: () => void
@@ -24,10 +24,9 @@ export function PatientProfile({ onBack }: PatientProfileProps) {
         <div className="flex gap-6 items-start">
           {/* Left Column - Avatar Section */}
           <Card className="p-6 flex flex-col items-center w-80">
-            <Avatar className="w-48 h-48 mb-4">
-              <AvatarImage src="/elderly-man-contemplative.png" alt="Abuelo Juan" />
-              <AvatarFallback className="text-4xl bg-primary text-primary-foreground">AJ</AvatarFallback>
-            </Avatar>
+            <div className="w-48 h-48 mb-4 rounded-full overflow-hidden shadow-lg">
+              <VideoAnimation src="/videos/waiting.mp4" label="esperando medicamento" />
+            </div>
             <h1 className="text-2xl font-bold text-foreground text-center">Abuelo Juan</h1>
             <p className="text-muted-foreground text-lg">87 años</p>
           </Card>
