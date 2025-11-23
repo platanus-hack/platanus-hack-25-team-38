@@ -22,6 +22,7 @@ export function ReminderInstanceTimeline({
     success: "bg-green-500 border-green-600",
     failed: "bg-red-500 border-red-600",
     failure: "bg-red-500 border-red-600",
+    rejected: "bg-red-500 border-red-600",
     waiting: "bg-yellow-500 border-yellow-600",
     pending: "bg-gray-400 border-gray-500",
   }
@@ -32,12 +33,13 @@ export function ReminderInstanceTimeline({
       <div className="absolute top-5 left-0 right-0 h-0.5 bg-gradient-to-r from-border via-border to-border" />
       
       <div className="relative flex items-start gap-3 overflow-x-auto pb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-        {displayInstances.map((instance, index) => {
+        {displayInstances.map((instance) => {
           const statusColor = statusColors[instance.status as keyof typeof statusColors] || "bg-gray-400 border-gray-500"
           const statusBg = {
             success: "bg-green-50 dark:bg-green-950/20",
             failed: "bg-red-50 dark:bg-red-950/20",
             failure: "bg-red-50 dark:bg-red-950/20",
+            rejected: "bg-red-50 dark:bg-red-950/20",
             waiting: "bg-yellow-50 dark:bg-yellow-950/20",
             pending: "bg-gray-50 dark:bg-gray-950/20",
           }
@@ -70,7 +72,7 @@ export function ReminderInstanceTimeline({
                 <div className={`text-[10px] font-medium mt-0.5 ${
                   instance.status === "success"
                     ? "text-green-700 dark:text-green-400"
-                    : instance.status === "failed" || instance.status === "failure"
+                    : instance.status === "failed" || instance.status === "rejected"
                       ? "text-red-700 dark:text-red-400"
                       : instance.status === "waiting"
                         ? "text-yellow-700 dark:text-yellow-400"
@@ -78,11 +80,13 @@ export function ReminderInstanceTimeline({
                 }`}>
                   {instance.status === "success"
                     ? "Tomado"
-                    : instance.status === "failed" || instance.status === "failure"
+                    : instance.status === "failed"
                       ? "Fallido"
-                      : instance.status === "waiting"
-                        ? "Esperando"
-                        : "Pendiente"}
+                      : instance.status === "rejected"
+                        ? "Rechazado"
+                        : instance.status === "waiting"
+                          ? "Esperando"
+                          : "Pendiente"}
                 </div>
               </div>
             </div>
